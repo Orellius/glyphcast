@@ -10,5 +10,5 @@
     "noUnusedLocals": true,
     "types": ["bun"]
   },
-  "include": ["src", "server"]
+  "include": ["src", "server", "clients"]
 }

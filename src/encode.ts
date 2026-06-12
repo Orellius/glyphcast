@@ -15,6 +15,10 @@ const HB = '▀'
 const RAMP = ' .:-=+*#%@'
 const QUAD = [' ', '▘', '▝', '▀', '▖', '▌', '▞', '▛', '▗', '▚', '▐', '▜', '▄', '▙', '▟', '█']
 
+// wire glyph index -> char, in atlas order (quadrant 0-15, ascii ramp 16-25);
+// what a text receiver (terminal client) prints for each cell
+export const GLYPH_CHARS = [...QUAD, ...RAMP]
+
 const HEX: string[] = []
 for (let i = 0; i < 256; i++) HEX.push(i.toString(16).padStart(2, '0'))
 const hex = (c: number) => '#' + HEX[(c >> 16) & 255] + HEX[(c >> 8) & 255] + HEX[c & 255]
