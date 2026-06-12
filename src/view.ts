@@ -13,12 +13,12 @@ import { createWireState, stateChecksum, stateToCells, unpack, type WireMode, ty
 const q = new URLSearchParams(location.search)
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
 const ch = q.get('ch') ?? 'main'
-// scan/gap draw the panel's line structure - they read as black lines at
-// lower cols, so they are opt-in; glow only adds light, safe as default
+// all display FX opt-in: scan/gap read as black grid lines, glow lifts
+// blacks (washed-out look). Default = the pure picture.
 const fx = {
   scan: Number(q.get('scan') ?? 0),
   gap: Number(q.get('gap') ?? 0),
-  glow: Number(q.get('glow') ?? 0.3),
+  glow: Number(q.get('glow') ?? 0),
 }
 
 const canvas = document.getElementById('glcanvas') as HTMLCanvasElement
