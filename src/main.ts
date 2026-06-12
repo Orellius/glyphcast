@@ -154,8 +154,19 @@ stage.addEventListener('click', () => {
 })
 glCanvas.addEventListener('click', togglePlay)
 
+// The DOM engine re-lays-out real <span>s every frame; past ~320 cols that is
+// hundreds of thousands of nodes per frame and it locked up a real machine.
+// The slider clamps to keep the proof honest AND survivable.
+const DOM_MAX_COLS = 320
+const colsSlider = $<HTMLInputElement>('cols')
 $<HTMLSelectElement>('engine').addEventListener('change', (e) => {
   engine = (e.target as HTMLSelectElement).value as Engine
+  colsSlider.max = engine === 'dom' ? String(DOM_MAX_COLS) : '1920'
+  if (engine === 'dom' && cols > DOM_MAX_COLS) {
+    cols = DOM_MAX_COLS
+    colsSlider.value = String(cols)
+    $('colsv').textContent = String(cols)
+  }
   layout()
 })
 $<HTMLSelectElement>('mode').addEventListener('change', (e) => {
