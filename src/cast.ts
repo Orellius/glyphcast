@@ -269,9 +269,10 @@ function rafLoop() {
 }
 
 // rVFC/rAF freeze in hidden tabs; a dedicated-worker timer doesn't. The video
-// keeps decoding while playing, so casting survives backgrounding.
+// keeps decoding while playing, so casting survives backgrounding. 8ms tick =
+// 120fps ceiling for hidden casting (33ms used to cap it at 30 needlessly).
 const tickWorker = new Worker(
-  URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 33)'], { type: 'text/javascript' })),
+  URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 8)'], { type: 'text/javascript' })),
 )
 tickWorker.onmessage = () => {
   if (sourceIsWc) {

@@ -31,6 +31,8 @@ const statsEl = document.getElementById('stats') as HTMLSpanElement
 const CHAR_RATIO = measureCharRatio()
 const gl = createRendererGL(canvas, { p3: q.get('p3') === '1' })
 gl.setFx(fx.scan, fx.gap, fx.glow)
+// TV picture settings: ?sat=1.2&con=1.05&bri=1 (neutral = 1)
+gl.setPicture(Number(q.get('sat') ?? 1), Number(q.get('con') ?? 1), Number(q.get('bri') ?? 1))
 
 // TV shell: stats fade after idle, double-click toggles fullscreen,
 // wheel = zoom-to-reveal (lean into the panel until emitters resolve),

@@ -37,6 +37,9 @@ uniform float uOledGain;
 uniform float uFrame;
 uniform float uZoom;
 uniform vec2 uCenter;
+uniform float uSat;
+uniform float uCon;
+uniform float uBri;
 
 float atlasA(float gi, vec2 p) {
   return uPage > 0.5
@@ -63,6 +66,12 @@ void main() {
 
   float a = atlasA(gi, inCell);
   vec3 col = mix(bg.rgb, fg.rgb, a);
+  // picture controls: the 2-colors-per-cell encode averages hues inside each
+  // cell, which slightly desaturates fine colorful texture - same reason TVs
+  // ship a saturation control. Defaults are neutral (1.0).
+  col = mix(vec3(dot(col, vec3(0.2126, 0.7152, 0.0722))), col, uSat);
+  col = (col - 0.5) * uCon + 0.5;
+  col *= uBri;
 
   if (uOled > 0.5) {
     // emitter emulation: one RGB triad per glyph subpixel, lit by the
@@ -348,6 +357,12 @@ export function createRendererGL(canvas: HTMLCanvasElement, opts: { p3?: boolean
   const uCenter = gl.getUniformLocation(prog, 'uCenter')
   gl.uniform1f(uZoom, 1)
   gl.uniform2f(uCenter, 0.5, 0.5)
+  const uSat = gl.getUniformLocation(prog, 'uSat')
+  const uCon = gl.getUniformLocation(prog, 'uCon')
+  const uBri = gl.getUniformLocation(prog, 'uBri')
+  gl.uniform1f(uSat, 1)
+  gl.uniform1f(uCon, 1)
+  gl.uniform1f(uBri, 1)
   let frameNo = 0
 
   const progD = gl.createProgram()!
@@ -383,6 +398,12 @@ export function createRendererGL(canvas: HTMLCanvasElement, opts: { p3?: boolean
       gl.uniform1f(uScan, scan)
       gl.uniform1f(uGap, gap)
       gl.uniform1f(uGlow, glow)
+    },
+    setPicture(sat: number, con: number, bri: number) {
+      gl.useProgram(prog)
+      gl.uniform1f(uSat, sat)
+      gl.uniform1f(uCon, con)
+      gl.uniform1f(uBri, bri)
     },
     setZoom(zoom: number, cx: number, cy: number) {
       gl.useProgram(prog)
