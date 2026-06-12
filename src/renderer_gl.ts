@@ -35,6 +35,8 @@ uniform float uOled;
 uniform vec2 uOledTiles;
 uniform float uOledGain;
 uniform float uFrame;
+uniform float uZoom;
+uniform vec2 uCenter;
 
 float atlasA(float gi, vec2 p) {
   return uPage > 0.5
@@ -45,7 +47,14 @@ float atlasA(float gi, vec2 p) {
 in vec2 vUV;
 out vec4 frag;
 void main() {
-  vec2 cell = vec2(vUV.x, 1.0 - vUV.y) * uGrid;
+  // zoom-to-reveal: scale around uCenter; past ~6px/tile the LOD resolves
+  // cells into emitter triads - leaning into the panel
+  vec2 zuv = uCenter + (vec2(vUV.x, 1.0 - vUV.y) - uCenter) / uZoom;
+  if (any(lessThan(zuv, vec2(0.0))) || any(greaterThanEqual(zuv, vec2(1.0)))) {
+    frag = vec4(0.0, 0.0, 0.0, 1.0);
+    return;
+  }
+  vec2 cell = zuv * uGrid;
   ivec2 ci = ivec2(min(floor(cell), uGrid - 1.0));
   vec4 fg = texelFetch(uFg, ci, 0);
   vec4 bg = texelFetch(uBg, ci, 0);
@@ -335,6 +344,10 @@ export function createRendererGL(canvas: HTMLCanvasElement, opts: { p3?: boolean
   const uOledTiles = gl.getUniformLocation(prog, 'uOledTiles')
   const uOledGain = gl.getUniformLocation(prog, 'uOledGain')
   const uFrame = gl.getUniformLocation(prog, 'uFrame')
+  const uZoom = gl.getUniformLocation(prog, 'uZoom')
+  const uCenter = gl.getUniformLocation(prog, 'uCenter')
+  gl.uniform1f(uZoom, 1)
+  gl.uniform2f(uCenter, 0.5, 0.5)
   let frameNo = 0
 
   const progD = gl.createProgram()!
@@ -370,6 +383,11 @@ export function createRendererGL(canvas: HTMLCanvasElement, opts: { p3?: boolean
       gl.uniform1f(uScan, scan)
       gl.uniform1f(uGap, gap)
       gl.uniform1f(uGlow, glow)
+    },
+    setZoom(zoom: number, cx: number, cy: number) {
+      gl.useProgram(prog)
+      gl.uniform1f(uZoom, zoom)
+      gl.uniform2f(uCenter, cx, cy)
     },
     setOled(on: boolean, tilesX: number, tilesY: number, gain: number) {
       gl.useProgram(prog)

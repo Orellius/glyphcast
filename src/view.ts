@@ -32,7 +32,9 @@ const CHAR_RATIO = measureCharRatio()
 const gl = createRendererGL(canvas, { p3: q.get('p3') === '1' })
 gl.setFx(fx.scan, fx.gap, fx.glow)
 
-// TV shell: stats fade after idle, click toggles fullscreen
+// TV shell: stats fade after idle, double-click toggles fullscreen,
+// wheel = zoom-to-reveal (lean into the panel until emitters resolve),
+// drag = pan while zoomed
 let idleT = 0
 function poke() {
   document.body.classList.remove('idle')
@@ -41,13 +43,68 @@ function poke() {
 }
 window.addEventListener('mousemove', poke)
 poke()
-canvas.addEventListener('click', () => {
+canvas.addEventListener('dblclick', () => {
   if (document.fullscreenElement) void document.exitFullscreen()
   else void document.documentElement.requestFullscreen()
 })
 window.addEventListener('resize', () => {
   if (state) layout(state.cols, state.rows)
 })
+
+let zoom = 1
+let cx = 0.5
+let cy = 0.5
+
+function clampView() {
+  const half = 0.5 / zoom
+  cx = Math.min(Math.max(cx, half), 1 - half)
+  cy = Math.min(Math.max(cy, half), 1 - half)
+}
+
+// repaint from the last received frame so zoom/pan respond between packets
+function rerender() {
+  gl.setZoom(zoom, cx, cy)
+  if (state) gl.render(fg, bg, state.cols, state.rows, lastPage ?? false)
+}
+
+canvas.addEventListener(
+  'wheel',
+  (e) => {
+    e.preventDefault()
+    const r = canvas.getBoundingClientRect()
+    const px = (e.clientX - r.left) / r.width
+    const py = (e.clientY - r.top) / r.height
+    const prev = zoom
+    zoom = Math.min(60, Math.max(1, zoom * Math.exp(-e.deltaY * 0.0022)))
+    const k = prev / zoom
+    cx = px - (px - cx) * k
+    cy = py - (py - cy) * k
+    clampView()
+    rerender()
+  },
+  { passive: false },
+)
+
+let dragging = false
+let lastX = 0
+let lastY = 0
+canvas.addEventListener('pointerdown', (e) => {
+  dragging = true
+  lastX = e.clientX
+  lastY = e.clientY
+  canvas.setPointerCapture(e.pointerId)
+})
+canvas.addEventListener('pointermove', (e) => {
+  if (!dragging || zoom === 1) return
+  const r = canvas.getBoundingClientRect()
+  cx -= (e.clientX - lastX) / (r.width * zoom)
+  cy -= (e.clientY - lastY) / (r.height * zoom)
+  lastX = e.clientX
+  lastY = e.clientY
+  clampView()
+  rerender()
+})
+canvas.addEventListener('pointerup', () => (dragging = false))
 
 let state: WireState | null = null
 let wireMode: WireMode = 'color'
