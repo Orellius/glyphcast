@@ -125,6 +125,7 @@ function onBand(b: BandMsg) {
 let lastT = -1
 
 function castFrame(now: number) {
+  if (sourceIsWc) return
   if (video.readyState < 2 || !state) return
   if (video.currentTime === lastT && !wantKey) return
   if (pool.length && inFlight) return
@@ -177,21 +178,35 @@ function finishFrame(now: number) {
   }
 }
 
-// WebCodecs source: pump on rAF when visible, worker tick when hidden
+// WebCodecs source: pump on rAF when visible, worker tick when hidden.
+// sourceIsWc flips live when a file is dropped - any drop streams via
+// WebCodecs no matter how the page started.
+let sourceIsWc = wc
 let wcPump: (() => void) | null = null
-if (wc) {
-  void createWcSource(
-    q.get('src') ?? '/bbb60.mp4',
-    (frame) => castImage(frame, performance.now()),
-    (msg) => (statsEl.textContent = `wc error: ${msg}`),
-  )
-    .then((s) => {
-      const d = s.dims()
-      if (d) layout(d.w, d.h)
-      wcPump = s.pump
-    })
-    .catch((e: Error) => (statsEl.textContent = `wc error: ${e.message}`))
+let wcSrc: Awaited<ReturnType<typeof createWcSource>> | null = null
+
+async function startWc(url: string) {
+  statsEl.textContent = 'loading source…'
+  try {
+    const s = await createWcSource(
+      url,
+      (frame) => castImage(frame, performance.now()),
+      (msg) => (statsEl.textContent = `wc error: ${msg}`),
+    )
+    wcSrc?.close()
+    userPaused = true // disarm the video auto-resume; the element is out of the loop now
+    if (!video.paused) video.pause()
+    sourceIsWc = true
+    const d = s.dims()
+    if (d) layout(d.w, d.h)
+    wcPump = s.pump
+    wcSrc = s
+  } catch (e) {
+    statsEl.textContent = `wc error: ${(e as Error).message}`
+  }
 }
+
+if (wc) void startWc(q.get('src') ?? '/bbb60.mp4')
 
 function onFrame(now: number) {
   if (!document.hidden) castFrame(now)
@@ -200,7 +215,7 @@ function onFrame(now: number) {
 
 function rafLoop() {
   requestAnimationFrame(rafLoop)
-  if (wc && wcPump && !document.hidden) wcPump()
+  if (sourceIsWc && wcPump && !document.hidden) wcPump()
 }
 
 // rVFC/rAF freeze in hidden tabs; a dedicated-worker timer doesn't. The video
@@ -209,7 +224,7 @@ const tickWorker = new Worker(
   URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 33)'], { type: 'text/javascript' })),
 )
 tickWorker.onmessage = () => {
-  if (wc) {
+  if (sourceIsWc) {
     if (wcPump && (document.hidden || wantKey)) wcPump()
     return
   }
@@ -244,6 +259,20 @@ if (!wc) {
 }
 rafLoop()
 
+// drop any video file anywhere on the page - it streams via WebCodecs
+document.addEventListener('dragover', (e) => e.preventDefault())
+document.addEventListener('drop', (e) => {
+  e.preventDefault()
+  const f = e.dataTransfer?.files?.[0]
+  if (f) void startWc(URL.createObjectURL(f))
+})
+const fileInput = document.getElementById('file') as HTMLInputElement | null
+document.getElementById('open')?.addEventListener('click', () => fileInput?.click())
+fileInput?.addEventListener('change', () => {
+  const f = fileInput.files?.[0]
+  if (f) void startWc(URL.createObjectURL(f))
+})
+
 declare global {
   interface Window {
     __gcc: {
@@ -251,6 +280,8 @@ declare global {
       video: HTMLVideoElement
       grid: () => { cols: number; rows: number; wireMode: WireMode }
       checksum: () => number
+      openSrc: (url: string) => Promise<void>
+      isWc: () => boolean
     }
   }
 }
@@ -259,4 +290,6 @@ window.__gcc = {
   video,
   grid: () => ({ cols, rows, wireMode }),
   checksum: () => (state ? stateChecksum(state, wireMode) : -1),
+  openSrc: (url) => startWc(url),
+  isWc: () => sourceIsWc,
 }

@@ -13,6 +13,7 @@ import { createFile, DataStream, type ISOFile } from 'mp4box'
 type WcSource = {
   pump: () => void
   dims: () => { w: number; h: number } | null
+  close: () => void
 }
 
 export async function createWcSource(
@@ -81,9 +82,11 @@ export async function createWcSource(
   let idx = 0
   let loopBaseUs = 0
   let clock0 = performance.now()
+  let closed = false
   const t0 = chunks[0].timestamp
 
   function pump() {
+    if (closed) return
     // keep the decoder fed a little ahead
     while (idx < chunks.length && decoder.decodeQueueSize < 6 && ready.length < 6) {
       decoder.decode(chunks[idx++])
@@ -109,7 +112,16 @@ export async function createWcSource(
 
   // align the clock to the first emitted frame
   clock0 = performance.now()
-  return { pump, dims: () => dims }
+  return {
+    pump,
+    dims: () => dims,
+    close: () => {
+      closed = true
+      for (const f of ready) f.close()
+      ready.length = 0
+      if (decoder.state !== 'closed') decoder.close()
+    },
+  }
 }
 
 // codec private data (avcC/hvcC/vpcC/av1C) for VideoDecoderConfig.description
