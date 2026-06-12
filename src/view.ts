@@ -6,7 +6,9 @@
 // NOT responsible for: encoding or capture - a viewer never sees pixels.
 // Test strategy: E2E checksum convergence with cast.ts via window.__gcv.
 
+import { GLYPH_CHARS } from './encode'
 import { measureCharRatio } from './grid'
+import { OCT_CHARS } from './octants'
 import { createRendererGL } from './renderer_gl'
 import { createWireState, stateChecksum, stateToCells, unpack, type WireDepth, type WireMode, type WireState } from './wire'
 
@@ -108,13 +110,90 @@ canvas.addEventListener('pointermove', (e) => {
 })
 canvas.addEventListener('pointerup', () => (dragging = false))
 
+// the proof tools: 'i' = live cell inspector (the character under your
+// cursor, named, while the stream retypes it), 't' = dump the current frame
+// as plain text
+const inspectEl = document.getElementById('inspect') as HTMLDivElement
+const inspGlyph = document.getElementById('inspGlyph') as HTMLSpanElement
+const inspMeta = document.getElementById('inspMeta') as HTMLSpanElement
+let inspecting = false
+let mouseX = 0
+let mouseY = 0
+
+function cellChar(i: number): string {
+  const g = state!.glyph[i]
+  return (lastPageState ? OCT_CHARS[g] : GLYPH_CHARS[g]) ?? ' '
+}
+
+function updateInspector() {
+  if (!inspecting || !state) return
+  const r = canvas.getBoundingClientRect()
+  const ux = (mouseX - r.left) / r.width
+  const uy = (mouseY - r.top) / r.height
+  if (ux < 0 || ux >= 1 || uy < 0 || uy >= 1) {
+    inspectEl.style.display = 'none'
+    return
+  }
+  // same zoom remap as the shader
+  const zx = cx + (ux - cx) / zoom
+  const zy = cy + (uy - cy) / zoom
+  const col = Math.min(state.cols - 1, Math.floor(zx * state.cols))
+  const row = Math.min(state.rows - 1, Math.floor(zy * state.rows))
+  const i = row * state.cols + col
+  const ch = cellChar(i)
+  const cp = ch.codePointAt(0) ?? 32
+  const f = state.fg[i]
+  const b = state.bg[i]
+  const hex6 = (v: number) => '#' + v.toString(16).padStart(6, '0')
+  inspGlyph.textContent = ch === ' ' ? '␠' : ch
+  inspMeta.style.whiteSpace = 'pre'
+  inspMeta.textContent =
+    `cell ${col},${row} · U+${cp.toString(16).toUpperCase().padStart(4, '0')}\n` +
+    (wireMode === 'color' ? `fg ${hex6(f)} · bg ${hex6(b)}` : 'mono')
+  inspectEl.style.display = 'block'
+  inspectEl.style.left = `${Math.min(mouseX + 18, window.innerWidth - 180)}px`
+  inspectEl.style.top = `${Math.min(mouseY + 18, window.innerHeight - 110)}px`
+}
+
+window.addEventListener('mousemove', (e) => {
+  mouseX = e.clientX
+  mouseY = e.clientY
+  updateInspector()
+})
+setInterval(() => updateInspector(), 120) // live-refresh while the stream retypes
+
+function dumpFrameAsText() {
+  if (!state) return
+  const lines: string[] = []
+  for (let y = 0; y < state.rows; y++) {
+    let line = ''
+    for (let x = 0; x < state.cols; x++) line += cellChar(y * state.cols + x)
+    lines.push(line)
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `glyphcast-frame-${state.cols}x${state.rows}.txt`
+  a.click()
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'i') {
+    inspecting = !inspecting
+    if (!inspecting) inspectEl.style.display = 'none'
+  }
+  if (e.key === 't') dumpFrameAsText()
+})
+
 let state: WireState | null = null
 let wireMode: WireMode = 'color'
 let lastPage: boolean | null = null
 let fg = new Uint8Array(0)
 let bg = new Uint8Array(0)
 
-const stats = { frames: 0, recvBytes: 0, kbps: 0, fps: 0, cells: 0, audioPkts: 0, audioCfg: false }
+const stats = { frames: 0, recvBytes: 0, kbps: 0, fps: 0, cells: 0, audioPkts: 0, audioCfg: false, glyphsPerSec: 0 }
+let winTouched = 0
+let lastPageState = false
 let lastAt = 0
 let winBytes = 0
 let winAt = performance.now()
@@ -221,7 +300,8 @@ ws.addEventListener('message', (e) => {
     stats.cells = cols * rows
     layout(cols, rows)
   }
-  unpack(pkt, state)
+  winTouched += unpack(pkt, state)
+  lastPageState = octantPage
   stateToCells(state, wireMode, fg, bg, depth)
   if (oled && octantPage !== lastPage) {
     gl.setOled(true, 2, octantPage ? 4 : 2, oledGain)
@@ -237,11 +317,14 @@ ws.addEventListener('message', (e) => {
   lastAt = now
   if (now - winAt > 500) {
     stats.kbps = Math.round((winBytes * 8) / (now - winAt))
+    stats.glyphsPerSec = Math.round((winTouched * 1000) / (now - winAt))
     winBytes = 0
+    winTouched = 0
     winAt = now
     statsEl.textContent =
       `glyphTV · ch ${ch} · ${cols}×${rows} ${wireMode} · ${stats.fps.toFixed(0)} fps · ` +
-      `${stats.kbps} kbps raw · ${stats.frames} frames`
+      `${(stats.glyphsPerSec / 1000).toFixed(0)}k letters retyped/s · ${stats.kbps} kbps raw · ` +
+      `${stats.frames} frames · i = inspect · t = save frame as .txt`
   }
 })
 ws.addEventListener('close', () => {
