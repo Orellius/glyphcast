@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>glyphTV player</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0a0a0c; overflow: hidden;
+      color: #8a8a93; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+    #bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; }
+    select, button {
+      background: #17171b; color: #c9c9d1; border: 1px solid #2a2a30;
+      border-radius: 4px; padding: 4px 10px; font: inherit; cursor: pointer;
+    }
+    #stats { margin-left: auto; color: #5c5c66; }
+    #grid { display: grid; gap: 6px; padding: 0 14px 14px;
+      height: calc(100vh - 52px); box-sizing: border-box; }
+    .pane { position: relative; background: #000; border-radius: 6px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; }
+    .pane canvas { display: block; max-width: 100%; max-height: 100%; cursor: pointer; }
+    .chip { position: absolute; top: 8px; left: 8px; padding: 3px 9px;
+      background: rgba(10, 10, 14, 0.78); border: 1px solid #2a2a30; border-radius: 999px;
+      color: #c9c9d1; pointer-events: none; }
+    #file { display: none; }
+    video { display: none; }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <select id="renderer"></select>
+    <button id="open">open video…</button>
+    <input id="file" type="file" accept="video/*" />
+    <span id="stats">loading…</span>
+  </div>
+  <div id="grid"></div>
+  <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay></video>
+  <script type="module" src="/src/player.ts"></script>
+</body>
+</html>
