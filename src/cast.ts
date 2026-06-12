@@ -55,6 +55,44 @@ function layout() {
   const wrap = document.getElementById('wrap') as HTMLDivElement
   const fs = wrap.clientWidth / (cols * CHAR_RATIO)
   gl.resize(wrap.clientWidth, rows * fs)
+  initPool()
+}
+
+// band-parallel encode pool: sampling + encodeCells are the two serial costs
+// that cap the caster (~34ms/frame at 960 cols); both shard cleanly by rows
+type BandMsg = { seq: number; y0: number; fg: Uint8Array; bg: Uint8Array }
+const PARALLEL_MIN_CELLS = 120_000
+let pool: Worker[] = []
+let poolSeq = 0
+let inFlight = false
+let arrived = 0
+
+function initPool() {
+  for (const w of pool) w.terminate()
+  pool = []
+  inFlight = false
+  if (typeof OffscreenCanvas === 'undefined' || cols * rows < PARALLEL_MIN_CELLS) return
+  const n = Math.min(8, Math.max(2, (navigator.hardwareConcurrency || 4) - 2))
+  const base = Math.floor(rows / n)
+  let y = 0
+  for (let i = 0; i < n; i++) {
+    const h = i < rows % n ? base + 1 : base
+    const w = new Worker(new URL('./encode.worker.ts', import.meta.url), { type: 'module' })
+    w.postMessage({ kind: 'init', cols, rowsTotal: rows, y0: y, y1: y + h, mode, qShift: 0 })
+    w.onmessage = (e: MessageEvent<BandMsg>) => onBand(e.data)
+    pool.push(w)
+    y += h
+  }
+}
+
+function onBand(b: BandMsg) {
+  if (b.seq !== poolSeq || !inFlight) return
+  fg.set(b.fg, b.y0 * cols * 4)
+  bg.set(b.bg, b.y0 * cols * 4)
+  arrived++
+  if (arrived < pool.length) return
+  inFlight = false
+  finishFrame(performance.now())
 }
 
 let lastT = -1
@@ -62,13 +100,32 @@ let lastT = -1
 function castFrame(now: number) {
   if (video.readyState < 2 || !state) return
   if (video.currentTime === lastT && !wantKey) return
+  if (pool.length) {
+    if (inFlight) return
+    lastT = video.currentTime
+    inFlight = true
+    arrived = 0
+    poolSeq++
+    const seq = poolSeq
+    void createImageBitmap(video).then((bmp) => {
+      // postMessage without transfer clones the bitmap per worker
+      for (const w of pool) w.postMessage({ kind: 'frame', seq, bitmap: bmp })
+      bmp.close()
+    })
+    return
+  }
   lastT = video.currentTime
+  const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
+  encodeCells(img, cols, rows, mode, 0, fg, bg)
+  finishFrame(now)
+}
+
+function finishFrame(now: number) {
+  if (!state) return
   if (wantKey) {
     state.glyph.fill(255)
     wantKey = false
   }
-  const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
-  encodeCells(img, cols, rows, mode, 0, fg, bg)
   const pkt = pack(state, fg, bg, wireMode, mode === 'octant')
   if (ws.readyState === WebSocket.OPEN) ws.send(pkt)
   if (!document.hidden) gl.render(fg, bg, cols, rows, mode === 'octant')
@@ -82,8 +139,8 @@ function castFrame(now: number) {
     winBytes = 0
     winAt = now
     statsEl.textContent =
-      `cast · ${cols}×${rows} ${wireMode} · ${stats.fps.toFixed(0)} fps · ` +
-      `${stats.kbps} kbps raw · ${stats.frames} frames · ws ${ws.readyState === 1 ? 'up' : 'down'}`
+      `cast · ${cols}×${rows} ${wireMode} · ${pool.length ? `${pool.length}-worker` : 'sync'} · ` +
+      `${stats.fps.toFixed(0)} fps · ${stats.kbps} kbps raw · ${stats.frames} frames · ws ${ws.readyState === 1 ? 'up' : 'down'}`
   }
 }
 

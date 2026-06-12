@@ -43,7 +43,9 @@ const server = Bun.serve<{ role: Role; ch: string }, never>({
     return new Response('glyphcast relay: ws?role=cast|view&ch=<channel>, GET /stats', { status: 200 })
   },
   websocket: {
-    perMessageDeflate: true,
+    // off by default: deflating a 1920-col stream (~hundreds of Mbps) pegs a
+    // core; enable for low-cols internet channels with GC_DEFLATE=1
+    perMessageDeflate: !!process.env.GC_DEFLATE,
     open(ws) {
       const r = room(ws.data.ch)
       if (ws.data.role === 'cast') {
