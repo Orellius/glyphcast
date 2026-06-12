@@ -52,24 +52,35 @@ void main() {
   float gi = floor(fg.a * 255.0 + 0.5);
   vec2 inCell = fract(cell);
 
-  if (uOled > 0.5) {
-    // emitter emulation: one RGB triad per glyph subpixel, lit by the
-    // subpixel's color sampled at tile center; black matrix between
-    vec2 t = inCell * uOledTiles;
-    vec2 tc = (floor(t) + vec2(0.5)) / uOledTiles;
-    vec3 colC = mix(bg.rgb, fg.rgb, atlasA(gi, tc));
-    vec2 f2 = fract(t);
-    float band = floor(min(f2.x, 0.999) * 3.0);
-    vec2 bf = vec2(fract(f2.x * 3.0), f2.y);
-    vec2 m = smoothstep(vec2(0.10), vec2(0.30), bf) * (vec2(1.0) - smoothstep(vec2(0.70), vec2(0.90), bf));
-    float v = band < 0.5 ? colC.r : band < 1.5 ? colC.g : colC.b;
-    vec3 e = band < 0.5 ? vec3(1.0, 0.13, 0.0) : band < 1.5 ? vec3(0.1, 1.0, 0.15) : vec3(0.05, 0.25, 1.0);
-    frag = vec4(min(e * (v * uOledGain) * (m.x * m.y), vec3(1.0)), 1.0);
-    return;
-  }
-
   float a = atlasA(gi, inCell);
   vec3 col = mix(bg.rgb, fg.rgb, a);
+
+  if (uOled > 0.5) {
+    // emitter emulation: one RGB triad per glyph subpixel, lit by the
+    // subpixel's color sampled at tile center; black matrix between.
+    // LOD: edges are fwidth-AA'd and the whole pattern dissolves into the
+    // plain picture when a tile spans < ~6 device px - drawing sub-pixel
+    // emitters is how you get shattered-glass moire, not an OLED.
+    vec2 t = inCell * uOledTiles;
+    float tilePx = 1.0 / max(fwidth(t.x), 1e-5);
+    float show = smoothstep(3.0, 6.0, tilePx);
+    if (show > 0.0) {
+      vec2 tc = (floor(t) + vec2(0.5)) / uOledTiles;
+      vec3 colC = mix(bg.rgb, fg.rgb, atlasA(gi, tc));
+      vec2 f2 = fract(t);
+      float band = floor(min(f2.x, 0.999) * 3.0);
+      vec2 bf = vec2(fract(f2.x * 3.0), f2.y);
+      vec2 w = vec2(fwidth(f2.x) * 3.0, fwidth(f2.y));
+      vec2 m = smoothstep(vec2(0.10) - w, vec2(0.30) + w, bf)
+             * (vec2(1.0) - smoothstep(vec2(0.70) - w, vec2(0.90) + w, bf));
+      float v = band < 0.5 ? colC.r : band < 1.5 ? colC.g : colC.b;
+      vec3 e = band < 0.5 ? vec3(1.0, 0.13, 0.0) : band < 1.5 ? vec3(0.1, 1.0, 0.15) : vec3(0.05, 0.25, 1.0);
+      vec3 emitter = min(e * (v * uOledGain) * (m.x * m.y), vec3(1.0));
+      col = mix(col, emitter, show);
+    }
+    frag = vec4(col, 1.0);
+    return;
+  }
   // phosphor glow: the cell's lit color bleeds into its unlit area
   col += fg.rgb * (uGlow * 0.45 * (1.0 - a));
   // scanline: darken the seam between cell rows (the TV's line structure)

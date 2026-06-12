@@ -36,14 +36,18 @@ if (wc) {
   c.height = 720
   const cx = c.getContext('2d')!
   let t = 0
-  setInterval(() => {
+  // page timers clamp to 1Hz in hidden tabs; a worker timer doesn't
+  const gradTick = new Worker(
+    URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 33)'], { type: 'text/javascript' })),
+  )
+  gradTick.onmessage = () => {
     t += 0.25
     const g = cx.createLinearGradient(0, 0, 1280, 720)
     g.addColorStop(0, `hsl(${(210 + t) % 360} 55% 6%)`)
     g.addColorStop(1, `hsl(${(250 + t) % 360} 65% 52%)`)
     cx.fillStyle = g
     cx.fillRect(0, 0, 1280, 720)
-  }, 33)
+  }
   video.srcObject = c.captureStream(30)
 } else {
   video.src = q.get('src') ?? '/bbb60.mp4'
