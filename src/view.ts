@@ -39,7 +39,8 @@ ws.binaryType = 'arraybuffer'
 ws.addEventListener('message', (e) => {
   if (typeof e.data === 'string') return
   const pkt = new Uint8Array(e.data as ArrayBuffer)
-  wireMode = pkt[0] === 1 ? 'color' : 'mono'
+  wireMode = pkt[0] & 1 ? 'color' : 'mono'
+  const octantPage = (pkt[0] & 2) !== 0
   const cols = pkt[1] | (pkt[2] << 8)
   const rows = pkt[3] | (pkt[4] << 8)
   if (!state || state.cols !== cols || state.rows !== rows) {
@@ -52,7 +53,7 @@ ws.addEventListener('message', (e) => {
   }
   unpack(pkt, state)
   stateToCells(state, wireMode, fg, bg)
-  gl.render(fg, bg, cols, rows)
+  gl.render(fg, bg, cols, rows, octantPage)
 
   const now = performance.now()
   stats.frames++

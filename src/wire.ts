@@ -31,12 +31,14 @@ const payloadBytes = (mode: WireMode) => (mode === 'color' ? 5 : 1)
 
 // fg/bg are encodeCells output (RGBA, glyph idx in fg alpha). Updates state in
 // place to the new frame and returns the packed delta (keyframe when state is
-// fresh: every cell differs from the 255 sentinel).
-export function pack(state: WireState, fg: Uint8Array, bg: Uint8Array, mode: WireMode): Uint8Array {
+// fresh: every cell differs from the 255 sentinel). octantPage flags header
+// bit 1: glyph bytes are octant bitmasks (their own 256-glyph page), not
+// indices into the base quadrant/ramp/sextant atlas.
+export function pack(state: WireState, fg: Uint8Array, bg: Uint8Array, mode: WireMode, octantPage = false): Uint8Array {
   const n = state.cols * state.rows
   const pb = payloadBytes(mode)
   const out = new Uint8Array(HDR + n * (pb + 4) + 8)
-  out[0] = mode === 'color' ? 1 : 0
+  out[0] = (mode === 'color' ? 1 : 0) | (octantPage ? 2 : 0)
   out[1] = state.cols & 255
   out[2] = state.cols >> 8
   out[3] = state.rows & 255
@@ -89,7 +91,7 @@ function cellChanged(state: WireState, fg: Uint8Array, bg: Uint8Array, i: number
 
 // applies a packed frame onto receiver state; returns cells touched
 export function unpack(buf: Uint8Array, state: WireState): number {
-  const mode: WireMode = buf[0] === 1 ? 'color' : 'mono'
+  const mode: WireMode = buf[0] & 1 ? 'color' : 'mono'
   const cols = buf[1] | (buf[2] << 8)
   const rows = buf[3] | (buf[4] << 8)
   if (cols !== state.cols || rows !== state.rows) throw new Error(`grid mismatch: ${cols}x${rows} vs state ${state.cols}x${state.rows}`)

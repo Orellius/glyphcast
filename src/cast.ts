@@ -16,7 +16,8 @@ const q = new URLSearchParams(location.search)
 const cols = Number(q.get('cols') ?? 240)
 const wireMode: WireMode = q.get('wire') === 'mono' ? 'mono' : 'color'
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
-const mode: Mode = q.get('mode') === 'sextant' ? 'sextant' : 'quadrant'
+const mq = q.get('mode')
+const mode: Mode = mq === 'sextant' ? 'sextant' : mq === 'octant' ? 'octant' : 'quadrant'
 
 const video = document.getElementById('video') as HTMLVideoElement
 video.src = q.get('src') ?? '/bbb60.mp4'
@@ -67,9 +68,9 @@ function castFrame(now: number) {
   }
   const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
   encodeCells(img, cols, rows, mode, 0, fg, bg)
-  const pkt = pack(state, fg, bg, wireMode)
+  const pkt = pack(state, fg, bg, wireMode, mode === 'octant')
   if (ws.readyState === WebSocket.OPEN) ws.send(pkt)
-  if (!document.hidden) gl.render(fg, bg, cols, rows)
+  if (!document.hidden) gl.render(fg, bg, cols, rows, mode === 'octant')
   stats.frames++
   stats.sentBytes += pkt.length
   winBytes += pkt.length

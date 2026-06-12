@@ -24,8 +24,10 @@ precision highp float;
 uniform sampler2D uFg;
 uniform sampler2D uBg;
 uniform sampler2D uAtlas;
+uniform sampler2D uAtlasOct;
 uniform vec2 uGrid;
 uniform float uGlyphs;
+uniform float uPage;
 in vec2 vUV;
 out vec4 frag;
 void main() {
@@ -35,7 +37,9 @@ void main() {
   vec4 bg = texelFetch(uBg, ci, 0);
   float gi = floor(fg.a * 255.0 + 0.5);
   vec2 inCell = fract(cell);
-  float a = texture(uAtlas, vec2((gi + inCell.x) / uGlyphs, inCell.y)).a;
+  float a = uPage > 0.5
+    ? texture(uAtlasOct, vec2((gi + inCell.x) / 256.0, inCell.y)).a
+    : texture(uAtlas, vec2((gi + inCell.x) / uGlyphs, inCell.y)).a;
   frag = vec4(mix(bg.rgb, fg.rgb, a), 1.0);
 }`
 
@@ -85,6 +89,40 @@ void main() {
     float gi = 16.0 + floor(min(dot(c, LW), 0.999) * 10.0);
     float a = texture(uAtlas, vec2((gi + f.x) / uGlyphs, f.y)).a;
     frag = vec4(quant(c) * a, 1.0);
+    return;
+  }
+
+  if (uMode == 4) {
+    vec2 opitch = cuv * vec2(0.5, 0.25);
+    vec3 t0 = sharpTap((ci + vec2(0.25, 0.125)) * cuv, opitch);
+    vec3 t1 = sharpTap((ci + vec2(0.75, 0.125)) * cuv, opitch);
+    vec3 t2 = sharpTap((ci + vec2(0.25, 0.375)) * cuv, opitch);
+    vec3 t3 = sharpTap((ci + vec2(0.75, 0.375)) * cuv, opitch);
+    vec3 t4 = sharpTap((ci + vec2(0.25, 0.625)) * cuv, opitch);
+    vec3 t5 = sharpTap((ci + vec2(0.75, 0.625)) * cuv, opitch);
+    vec3 t6 = sharpTap((ci + vec2(0.25, 0.875)) * cuv, opitch);
+    vec3 t7 = sharpTap((ci + vec2(0.75, 0.875)) * cuv, opitch);
+    float n0 = dot(t0, LW); float n1 = dot(t1, LW); float n2 = dot(t2, LW); float n3 = dot(t3, LW);
+    float n4 = dot(t4, LW); float n5 = dot(t5, LW); float n6 = dot(t6, LW); float n7 = dot(t7, LW);
+    float oavg = (n0 + n1 + n2 + n3 + n4 + n5 + n6 + n7) * 0.125;
+    bool p0 = n0 > oavg; bool p1 = n1 > oavg; bool p2 = n2 > oavg; bool p3 = n3 > oavg;
+    bool p4 = n4 > oavg; bool p5 = n5 > oavg; bool p6 = n6 > oavg; bool p7 = n7 > oavg;
+    vec3 fgO = vec3(0.0); float fno = 0.0;
+    vec3 bgO = vec3(0.0); float bno = 0.0;
+    if (p0) { fgO += t0; fno += 1.0; } else { bgO += t0; bno += 1.0; }
+    if (p1) { fgO += t1; fno += 1.0; } else { bgO += t1; bno += 1.0; }
+    if (p2) { fgO += t2; fno += 1.0; } else { bgO += t2; bno += 1.0; }
+    if (p3) { fgO += t3; fno += 1.0; } else { bgO += t3; bno += 1.0; }
+    if (p4) { fgO += t4; fno += 1.0; } else { bgO += t4; bno += 1.0; }
+    if (p5) { fgO += t5; fno += 1.0; } else { bgO += t5; bno += 1.0; }
+    if (p6) { fgO += t6; fno += 1.0; } else { bgO += t6; bno += 1.0; }
+    if (p7) { fgO += t7; fno += 1.0; } else { bgO += t7; bno += 1.0; }
+    vec3 obg = bno > 0.0 ? bgO / bno : fgO / max(fno, 1.0);
+    vec3 ofg = fno > 0.0 ? fgO / fno : obg;
+    int orow = int(min(f.y * 4.0, 3.0));
+    bool oleft = f.x < 0.5;
+    bool oOn = orow == 0 ? (oleft ? p0 : p1) : orow == 1 ? (oleft ? p2 : p3) : orow == 2 ? (oleft ? p4 : p5) : (oleft ? p6 : p7);
+    frag = vec4(quant(oOn ? ofg : obg), 1.0);
     return;
   }
 
@@ -166,6 +204,24 @@ function buildAtlas(): HTMLCanvasElement {
   return c
 }
 
+// octants get their own 256-glyph page (mask-indexed) - the base atlas's
+// 8-bit glyph index space is full
+function buildOctantAtlas(): HTMLCanvasElement {
+  const c = document.createElement('canvas')
+  c.width = 256 * GW
+  c.height = GH
+  const x = c.getContext('2d')!
+  x.fillStyle = '#fff'
+  const QH = GH / 4
+  for (let b = 0; b < 256; b++) {
+    const ox = b * GW
+    for (let s = 0; s < 8; s++) {
+      if (b & (1 << s)) x.fillRect(ox + (s & 1) * (GW / 2), (s >> 1) * QH, GW / 2, QH)
+    }
+  }
+  return c
+}
+
 function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
   const sh = gl.createShader(type)!
   gl.shaderSource(sh, src)
@@ -209,11 +265,16 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   newTex(2)
   gl.activeTexture(gl.TEXTURE2)
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, buildAtlas())
+  newTex(4)
+  gl.activeTexture(gl.TEXTURE4)
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, buildOctantAtlas())
 
   gl.uniform1i(gl.getUniformLocation(prog, 'uFg'), 0)
   gl.uniform1i(gl.getUniformLocation(prog, 'uBg'), 1)
   gl.uniform1i(gl.getUniformLocation(prog, 'uAtlas'), 2)
+  gl.uniform1i(gl.getUniformLocation(prog, 'uAtlasOct'), 4)
   gl.uniform1f(gl.getUniformLocation(prog, 'uGlyphs'), GLYPH_COUNT)
+  const uPage = gl.getUniformLocation(prog, 'uPage')
   const uGrid = gl.getUniformLocation(prog, 'uGrid')
 
   const progD = gl.createProgram()!
@@ -241,7 +302,7 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   let texRows = 0
   let vidW = 0
   let vidH = 0
-  const MODE_IDX = { quadrant: 0, halfblock: 1, ascii: 2, sextant: 3 } as const
+  const MODE_IDX = { quadrant: 0, halfblock: 1, ascii: 2, sextant: 3, octant: 4 } as const
 
   return {
     resize(cssW: number, cssH: number) {
@@ -252,8 +313,9 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
       canvas.style.height = `${cssH}px`
       gl.viewport(0, 0, canvas.width, canvas.height)
     },
-    render(fg: Uint8Array, bg: Uint8Array, cols: number, rows: number) {
+    render(fg: Uint8Array, bg: Uint8Array, cols: number, rows: number, octantPage = false) {
       gl.useProgram(prog)
+      gl.uniform1f(uPage, octantPage ? 1 : 0)
       if (cols !== texCols || rows !== texRows) {
         texCols = cols
         texRows = rows

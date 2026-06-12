@@ -273,7 +273,7 @@ window.__gc = {
       await seek(1 + f / fps)
       const img = sampler.sample(video, wcols * sampleX(wmode), wrows * sampleY(wmode))
       encodeCells(img, wcols, wrows, wmode, 0, wfg, wbg)
-      const pkt = pack(sender, wfg, wbg, wireMode)
+      const pkt = pack(sender, wfg, wbg, wireMode, wmode === 'octant')
       packets.push(pkt)
       unpack(pkt, receiver)
       if (f === 0) keyBytes = pkt.length
@@ -300,7 +300,7 @@ window.__gc = {
       const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
       sharpen(img, sharpAmt)
       encodeCells(img, cols, rows, mode, qShift, fgBuf, bgBuf)
-      glRenderer.render(fgBuf, bgBuf, cols, rows)
+      glRenderer.render(fgBuf, bgBuf, cols, rows, mode === 'octant')
     }
     glRenderer.finish()
     const totalMs = performance.now() - t0

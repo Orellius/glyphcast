@@ -8,12 +8,14 @@
 // packets) lands here without touching DOM code.
 // Test strategy: deterministic - feed a known ImageData, assert run merging.
 
-export type Mode = 'quadrant' | 'sextant' | 'halfblock' | 'ascii'
+export type Mode = 'quadrant' | 'sextant' | 'octant' | 'halfblock' | 'ascii'
 
 // subpixel sampling factors per mode: sample image is cols*sx wide, rows*sy tall
 export const sampleX = (m: Mode) => (m === 'ascii' || m === 'halfblock' ? 1 : 2)
-export const sampleY = (m: Mode) => (m === 'sextant' ? 3 : 2)
+export const sampleY = (m: Mode) => (m === 'octant' ? 4 : m === 'sextant' ? 3 : 2)
 export type Frame = { rows: string[]; spans: number; htmlBytes: number }
+
+import { OCT_CHARS } from './octants'
 
 const HB = '▀'
 const RAMP = ' .:-=+*#%@'
@@ -45,6 +47,7 @@ for (let l = 0; l < 256; l++) LUMA_CHAR.push(RAMP[((l * (RAMP.length - 1)) / 255
 export function encodeFrame(img: ImageData, cols: number, rows: number, mode: Mode, qShift: number): Frame {
   if (mode === 'quadrant') return encodeQuadrant(img, cols, rows, qShift)
   if (mode === 'sextant') return encodeSextant(img, cols, rows, qShift)
+  if (mode === 'octant') return encodeOctant(img, cols, rows, qShift)
   return mode === 'halfblock'
     ? encodeHalfblock(img, cols, rows, qShift)
     : encodeAscii(img, cols, rows, qShift)
@@ -181,6 +184,61 @@ function encodeSextant(img: ImageData, cols: number, rows: number, qShift: numbe
   return { rows: out, spans, htmlBytes }
 }
 
+function encodeOctant(img: ImageData, cols: number, rows: number, qShift: number): Frame {
+  const d = img.data
+  const W = img.width
+  const mask = (255 >> qShift) << qShift
+  const out: string[] = []
+  let spans = 0
+  let htmlBytes = 0
+  const idx = new Array<number>(8)
+  const lum = new Array<number>(8)
+  for (let y = 0; y < rows; y++) {
+    let html = ''
+    let runFg = -1
+    let runBg = -1
+    let run = ''
+    for (let x = 0; x < cols; x++) {
+      let avg = 0
+      for (let s = 0; s < 8; s++) {
+        const i = ((y * 4 + (s >> 1)) * W + x * 2 + (s & 1)) * 4
+        idx[s] = i
+        lum[s] = (d[i] * 54 + d[i + 1] * 183 + d[i + 2] * 19) >> 8
+        avg += lum[s]
+      }
+      avg = (avg / 8) | 0
+      let bits = 0
+      let fr = 0, fgc = 0, fb = 0, fn = 0
+      let br = 0, bgc = 0, bb = 0, bn = 0
+      for (let s = 0; s < 8; s++) {
+        const i = idx[s]
+        if (lum[s] > avg) { bits |= 1 << s; fr += d[i]; fgc += d[i + 1]; fb += d[i + 2]; fn++ }
+        else { br += d[i]; bgc += d[i + 1]; bb += d[i + 2]; bn++ }
+      }
+      const bg = bn === 0 ? 0 : (((br / bn) & mask) << 16) | (((bgc / bn) & mask) << 8) | ((bb / bn) & mask)
+      const fg = fn === 0 ? bg : (((fr / fn) & mask) << 16) | (((fgc / fn) & mask) << 8) | ((fb / fn) & mask)
+      if (fg === runFg && bg === runBg) {
+        run += OCT_CHARS[bits]
+        continue
+      }
+      if (run) {
+        html += spanFgBg(runFg, runBg, run)
+        spans++
+      }
+      runFg = fg
+      runBg = bg
+      run = OCT_CHARS[bits]
+    }
+    if (run) {
+      html += spanFgBg(runFg, runBg, run)
+      spans++
+    }
+    out.push(html)
+    htmlBytes += html.length
+  }
+  return { rows: out, spans, htmlBytes }
+}
+
 function encodeHalfblock(img: ImageData, cols: number, rows: number, qShift: number): Frame {
   const d = img.data
   const mask = (255 >> qShift) << qShift
@@ -303,6 +361,51 @@ export function encodeCells(
         bg[o] = (br / bn) & mask
         bg[o + 1] = (bgc / bn) & mask
         bg[o + 2] = (bb / bn) & mask
+        bg[o + 3] = 255
+        if (fn === 0) {
+          fg[o] = bg[o]
+          fg[o + 1] = bg[o + 1]
+          fg[o + 2] = bg[o + 2]
+        } else {
+          fg[o] = (fr / fn) & mask
+          fg[o + 1] = (fgc / fn) & mask
+          fg[o + 2] = (fb / fn) & mask
+        }
+        fg[o + 3] = bits
+      }
+    }
+    return
+  }
+
+  if (mode === 'octant') {
+    const idx = new Array<number>(8)
+    const lum = new Array<number>(8)
+    for (let y = 0; y < rows; y++) {
+      let o = y * cols * 4
+      for (let x = 0; x < cols; x++, o += 4) {
+        let avg = 0
+        for (let s = 0; s < 8; s++) {
+          const i = ((y * 4 + (s >> 1)) * W + x * 2 + (s & 1)) * 4
+          idx[s] = i
+          lum[s] = (d[i] * 54 + d[i + 1] * 183 + d[i + 2] * 19) >> 8
+          avg += lum[s]
+        }
+        avg = (avg / 8) | 0
+        let bits = 0
+        let fr = 0, fgc = 0, fb = 0, fn = 0
+        let br = 0, bgc = 0, bb = 0, bn = 0
+        for (let s = 0; s < 8; s++) {
+          const i = idx[s]
+          if (lum[s] > avg) { bits |= 1 << s; fr += d[i]; fgc += d[i + 1]; fb += d[i + 2]; fn++ }
+          else { br += d[i]; bgc += d[i + 1]; bb += d[i + 2]; bn++ }
+        }
+        if (bn === 0) {
+          bg[o] = bg[o + 1] = bg[o + 2] = 0
+        } else {
+          bg[o] = (br / bn) & mask
+          bg[o + 1] = (bgc / bn) & mask
+          bg[o + 2] = (bb / bn) & mask
+        }
         bg[o + 3] = 255
         if (fn === 0) {
           fg[o] = bg[o]

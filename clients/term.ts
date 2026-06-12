@@ -7,6 +7,7 @@
 // compare checksums.
 
 import { GLYPH_CHARS } from '../src/encode'
+import { OCT_CHARS } from '../src/octants'
 import { createWireState, stateChecksum, unpack, type WireMode, type WireState } from '../src/wire'
 
 const wsUrl = process.argv[2] ?? 'ws://localhost:8788'
@@ -14,6 +15,7 @@ const maxFrames = Number(process.env.GC_FRAMES ?? 0)
 
 let state: WireState | null = null
 let mode: WireMode = 'color'
+let octantPage = false
 let frames = 0
 
 const up = (v: number, hi: number, lo: number) => {
@@ -33,7 +35,7 @@ function render(s: WireState) {
     for (let x = 0; x < cols; x++) {
       const i = y * s.cols + x
       const g = s.glyph[i]
-      if (g === 255) {
+      if (g === 255 && !octantPage) {
         out += ' '
         continue
       }
@@ -49,7 +51,7 @@ function render(s: WireState) {
           lastBg = b
         }
       }
-      out += GLYPH_CHARS[g] ?? ' '
+      out += (octantPage ? OCT_CHARS[g] : GLYPH_CHARS[g]) ?? ' '
     }
     out += '\x1b[0m\n'
   }
@@ -62,7 +64,8 @@ ws.binaryType = 'arraybuffer'
 ws.onmessage = (e) => {
   if (typeof e.data === 'string') return
   const pkt = new Uint8Array(e.data as ArrayBuffer)
-  mode = pkt[0] === 1 ? 'color' : 'mono'
+  mode = pkt[0] & 1 ? 'color' : 'mono'
+  octantPage = (pkt[0] & 2) !== 0
   const cols = pkt[1] | (pkt[2] << 8)
   const rows = pkt[3] | (pkt[4] << 8)
   if (!state || state.cols !== cols || state.rows !== rows) {
