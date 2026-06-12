@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>glyphcast — view</title>
+  <title>glyphTV</title>
   <style>
-    body { margin: 0; background: #0a0a0c; color: #8a8a93; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
-    #wrap { width: min(94vw, 1500px); margin: 20px auto; }
-    #glcanvas { display: block; }
-    #stats { display: block; padding: 12px 2px; color: #5c5c66; }
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden;
+      color: #8a8a93; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+    #wrap { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    #glcanvas { display: block; max-width: 100vw; max-height: 100vh; cursor: pointer; }
+    #stats { position: fixed; left: 14px; bottom: 12px; color: #5c5c66;
+      transition: opacity 0.6s; pointer-events: none; }
+    body.idle #stats { opacity: 0; }
+    body.idle #glcanvas { cursor: none; }
   </style>
 </head>
 <body>
   <div id="wrap">
     <canvas id="glcanvas"></canvas>
-    <span id="stats">waiting for caster…</span>
   </div>
+  <span id="stats">tuning…</span>
   <script type="module" src="/src/view.ts"></script>
 </body>
 </html>

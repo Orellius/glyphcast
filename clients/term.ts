@@ -11,6 +11,7 @@ import { OCT_CHARS } from '../src/octants'
 import { createWireState, stateChecksum, unpack, type WireMode, type WireState } from '../src/wire'
 
 const wsUrl = process.argv[2] ?? 'ws://localhost:8788'
+const channel = process.env.GC_CH ?? 'main'
 const maxFrames = Number(process.env.GC_FRAMES ?? 0)
 
 let state: WireState | null = null
@@ -58,7 +59,7 @@ function render(s: WireState) {
   process.stdout.write(out)
 }
 
-const ws = new WebSocket(`${wsUrl}/?role=view`)
+const ws = new WebSocket(`${wsUrl}/?role=view&ch=${encodeURIComponent(channel)}`)
 ws.binaryType = 'arraybuffer'
 
 ws.onmessage = (e) => {

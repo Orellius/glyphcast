@@ -28,6 +28,9 @@ uniform sampler2D uAtlasOct;
 uniform vec2 uGrid;
 uniform float uGlyphs;
 uniform float uPage;
+uniform float uScan;
+uniform float uGap;
+uniform float uGlow;
 in vec2 vUV;
 out vec4 frag;
 void main() {
@@ -40,7 +43,14 @@ void main() {
   float a = uPage > 0.5
     ? texture(uAtlasOct, vec2((gi + inCell.x) / 256.0, inCell.y)).a
     : texture(uAtlas, vec2((gi + inCell.x) / uGlyphs, inCell.y)).a;
-  frag = vec4(mix(bg.rgb, fg.rgb, a), 1.0);
+  vec3 col = mix(bg.rgb, fg.rgb, a);
+  // phosphor glow: the cell's lit color bleeds into its unlit area
+  col += fg.rgb * (uGlow * 0.45 * (1.0 - a));
+  // scanline: darken the seam between cell rows (the TV's line structure)
+  col *= 1.0 - uScan * pow(abs(inCell.y - 0.5) * 2.0, 4.0);
+  // subpixel gap: thin dark separator between cell columns (OLED grid)
+  col *= 1.0 - uGap * pow(abs(inCell.x - 0.5) * 2.0, 8.0);
+  frag = vec4(col, 1.0);
 }`
 
 const FRAG_DIRECT = `#version 300 es
@@ -276,6 +286,9 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   gl.uniform1f(gl.getUniformLocation(prog, 'uGlyphs'), GLYPH_COUNT)
   const uPage = gl.getUniformLocation(prog, 'uPage')
   const uGrid = gl.getUniformLocation(prog, 'uGrid')
+  const uScan = gl.getUniformLocation(prog, 'uScan')
+  const uGap = gl.getUniformLocation(prog, 'uGap')
+  const uGlow = gl.getUniformLocation(prog, 'uGlow')
 
   const progD = gl.createProgram()!
   gl.attachShader(progD, compile(gl, gl.VERTEX_SHADER, VERT))
@@ -305,6 +318,12 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   const MODE_IDX = { quadrant: 0, halfblock: 1, ascii: 2, sextant: 3, octant: 4 } as const
 
   return {
+    setFx(scan: number, gap: number, glow: number) {
+      gl.useProgram(prog)
+      gl.uniform1f(uScan, scan)
+      gl.uniform1f(uGap, gap)
+      gl.uniform1f(uGlow, glow)
+    },
     resize(cssW: number, cssH: number) {
       const dpr = window.devicePixelRatio || 1
       canvas.width = Math.round(cssW * dpr)

@@ -1,7 +1,8 @@
-// glyphcast viewer: pure receiver. No <video>, no sampling - just WS packets
-// unpacked into receiver state, expanded to RGBA cell buffers, one GL draw
-// per packet. Grid dims come from the packet header; first packet allocates.
-// URL knobs: ?ws=ws://host:8788
+// glyphTV viewer: pure receiver and the TV itself. No <video>, no sampling -
+// just WS packets unpacked into receiver state, expanded to RGBA cell
+// buffers, one GL draw per packet. Grid dims come from the packet header.
+// Fullscreen black shell, stats fade when idle, click = fullscreen toggle.
+// URL knobs: ?ws=ws://host:8788&ch=main&scan=0.25&gap=0.15&glow=0.3
 // NOT responsible for: encoding or capture - a viewer never sees pixels.
 // Test strategy: E2E checksum convergence with cast.ts via window.__gcv.
 
@@ -11,12 +12,36 @@ import { createWireState, stateChecksum, stateToCells, unpack, type WireMode, ty
 
 const q = new URLSearchParams(location.search)
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
+const ch = q.get('ch') ?? 'main'
+const fx = {
+  scan: Number(q.get('scan') ?? 0.25),
+  gap: Number(q.get('gap') ?? 0.15),
+  glow: Number(q.get('glow') ?? 0.3),
+}
 
 const canvas = document.getElementById('glcanvas') as HTMLCanvasElement
 const statsEl = document.getElementById('stats') as HTMLSpanElement
 
 const CHAR_RATIO = measureCharRatio()
 const gl = createRendererGL(canvas)
+gl.setFx(fx.scan, fx.gap, fx.glow)
+
+// TV shell: stats fade after idle, click toggles fullscreen
+let idleT = 0
+function poke() {
+  document.body.classList.remove('idle')
+  clearTimeout(idleT)
+  idleT = window.setTimeout(() => document.body.classList.add('idle'), 2500)
+}
+window.addEventListener('mousemove', poke)
+poke()
+canvas.addEventListener('click', () => {
+  if (document.fullscreenElement) void document.exitFullscreen()
+  else void document.documentElement.requestFullscreen()
+})
+window.addEventListener('resize', () => {
+  if (state) layout(state.cols, state.rows)
+})
 
 let state: WireState | null = null
 let wireMode: WireMode = 'color'
@@ -30,11 +55,12 @@ let winAt = performance.now()
 
 function layout(cols: number, rows: number) {
   const wrap = document.getElementById('wrap') as HTMLDivElement
-  const fs = wrap.clientWidth / (cols * CHAR_RATIO)
-  gl.resize(wrap.clientWidth, rows * fs)
+  // fit the cell grid inside the viewport preserving aspect
+  const fs = Math.min(wrap.clientWidth / (cols * CHAR_RATIO), wrap.clientHeight / rows)
+  gl.resize(cols * CHAR_RATIO * fs, rows * fs)
 }
 
-const ws = new WebSocket(`${wsUrl}/?role=view`)
+const ws = new WebSocket(`${wsUrl}/?role=view&ch=${encodeURIComponent(ch)}`)
 ws.binaryType = 'arraybuffer'
 ws.addEventListener('message', (e) => {
   if (typeof e.data === 'string') return
@@ -66,12 +92,13 @@ ws.addEventListener('message', (e) => {
     winBytes = 0
     winAt = now
     statsEl.textContent =
-      `view · ${cols}×${rows} ${wireMode} · ${stats.fps.toFixed(0)} fps · ` +
+      `glyphTV · ch ${ch} · ${cols}×${rows} ${wireMode} · ${stats.fps.toFixed(0)} fps · ` +
       `${stats.kbps} kbps raw · ${stats.frames} frames`
   }
 })
 ws.addEventListener('close', () => {
-  statsEl.textContent = 'view · ws closed'
+  statsEl.textContent = `glyphTV · ch ${ch} · signal lost`
+  document.body.classList.remove('idle')
 })
 
 declare global {

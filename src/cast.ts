@@ -39,7 +39,8 @@ let lastAt = 0
 let winBytes = 0
 let winAt = performance.now()
 
-const ws = new WebSocket(`${wsUrl}/?role=cast`)
+const ch = q.get('ch') ?? 'main'
+const ws = new WebSocket(`${wsUrl}/?role=cast&ch=${encodeURIComponent(ch)}`)
 ws.binaryType = 'arraybuffer'
 ws.addEventListener('message', (e) => {
   if (e.data === 'key') wantKey = true
