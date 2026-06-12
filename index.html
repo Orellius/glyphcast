@@ -192,6 +192,19 @@
     }
     .term .ps { color: #3ddc84; }
     .term .out { color: #6fbf73; }
+    #termframe-box {
+      background: #060607;
+      border: 1px solid #26262c;
+      border-radius: 6px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 14px 0 10px;
+      min-height: 60px;
+    }
+    .termframe { margin: 0; font: 8px/1.06 ui-monospace, Menlo, Consolas, monospace; }
+    .termframe i { font-style: normal; }
+    .cap { color: #5c5c66; font-size: 12px; }
+    .cap code { color: #8a8a93; }
     table { border-collapse: collapse; width: 100%; margin: 14px 0 4px; }
     th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #1c1c21; vertical-align: top; }
     th { color: #c9c9d1; font-weight: 600; }
@@ -264,6 +277,10 @@
         real U+1CD00 octant glyphs in your terminal. The checksum matches the
         caster's: the wire is lossless by design. That output is a real end-to-end
         run, not a mock.</p>
+      <div id="termframe-box"></div>
+      <p class="cap">↑ an actual frame as received by <code>clients/term.ts</code> over
+        cast → relay → terminal (100×34 cells, quadrant mode, checksum 121124078).
+        Select it — it is text.</p>
     </section>
 
     <section>

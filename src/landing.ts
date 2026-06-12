@@ -146,3 +146,11 @@ copyBtn.addEventListener('click', () => {
     setTimeout(() => (copyBtn.textContent = orig), 2400)
   })
 })
+
+// captured term.ts frame (our own generated static asset) - lazy so it never
+// blocks the hero
+void fetch('/term-frame.html')
+  .then((r) => r.text())
+  .then((frag) => {
+    $('termframe-box').innerHTML = frag
+  })
