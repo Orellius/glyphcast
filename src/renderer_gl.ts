@@ -34,6 +34,7 @@ uniform float uGlow;
 uniform float uOled;
 uniform vec2 uOledTiles;
 uniform float uOledGain;
+uniform float uFrame;
 
 float atlasA(float gi, vec2 p) {
   return uPage > 0.5
@@ -75,6 +76,10 @@ void main() {
   col *= 1.0 - uScan * pow(abs(inCell.y - 0.5) * 2.0, 4.0);
   // subpixel gap: thin dark separator between cell columns (OLED grid)
   col *= 1.0 - uGap * pow(abs(inCell.x - 0.5) * 2.0, 8.0);
+  // FRC: +-0.5 LSB temporal noise - same trick 8-bit+FRC "10-bit" panels use;
+  // breaks residual quantization banding into invisible averaged noise
+  float dn = fract(sin(dot(gl_FragCoord.xy + vec2(uFrame * 13.0, uFrame * 7.0), vec2(12.9898, 78.233))) * 43758.5453);
+  col += vec3((dn - 0.5) / 255.0);
   frag = vec4(col, 1.0);
 }`
 
@@ -265,9 +270,10 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
   return sh
 }
 
-export function createRendererGL(canvas: HTMLCanvasElement) {
+export function createRendererGL(canvas: HTMLCanvasElement, opts: { p3?: boolean } = {}) {
   const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, antialias: false })
   if (!gl) throw new Error('webgl2 unavailable')
+  if (opts.p3 && 'drawingBufferColorSpace' in gl) gl.drawingBufferColorSpace = 'display-p3'
 
   const prog = gl.createProgram()!
   gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT))
@@ -317,6 +323,8 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   const uOled = gl.getUniformLocation(prog, 'uOled')
   const uOledTiles = gl.getUniformLocation(prog, 'uOledTiles')
   const uOledGain = gl.getUniformLocation(prog, 'uOledGain')
+  const uFrame = gl.getUniformLocation(prog, 'uFrame')
+  let frameNo = 0
 
   const progD = gl.createProgram()!
   gl.attachShader(progD, compile(gl, gl.VERTEX_SHADER, VERT))
@@ -369,6 +377,7 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
     render(fg: Uint8Array, bg: Uint8Array, cols: number, rows: number, octantPage = false) {
       gl.useProgram(prog)
       gl.uniform1f(uPage, octantPage ? 1 : 0)
+      gl.uniform1f(uFrame, (frameNo = (frameNo + 1) % 240))
       if (cols !== texCols || rows !== texRows) {
         texCols = cols
         texRows = rows

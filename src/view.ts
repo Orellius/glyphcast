@@ -8,7 +8,7 @@
 
 import { measureCharRatio } from './grid'
 import { createRendererGL } from './renderer_gl'
-import { createWireState, stateChecksum, stateToCells, unpack, type WireMode, type WireState } from './wire'
+import { createWireState, stateChecksum, stateToCells, unpack, type WireDepth, type WireMode, type WireState } from './wire'
 
 const q = new URLSearchParams(location.search)
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
@@ -29,7 +29,7 @@ const canvas = document.getElementById('glcanvas') as HTMLCanvasElement
 const statsEl = document.getElementById('stats') as HTMLSpanElement
 
 const CHAR_RATIO = measureCharRatio()
-const gl = createRendererGL(canvas)
+const gl = createRendererGL(canvas, { p3: q.get('p3') === '1' })
 gl.setFx(fx.scan, fx.gap, fx.glow)
 
 // TV shell: stats fade after idle, click toggles fullscreen
@@ -74,6 +74,7 @@ ws.addEventListener('message', (e) => {
   const pkt = new Uint8Array(e.data as ArrayBuffer)
   wireMode = pkt[0] & 1 ? 'color' : 'mono'
   const octantPage = (pkt[0] & 2) !== 0
+  const depth: WireDepth = pkt[0] & 4 ? '888' : '565'
   const cols = pkt[1] | (pkt[2] << 8)
   const rows = pkt[3] | (pkt[4] << 8)
   if (!state || state.cols !== cols || state.rows !== rows) {
@@ -85,7 +86,7 @@ ws.addEventListener('message', (e) => {
     layout(cols, rows)
   }
   unpack(pkt, state)
-  stateToCells(state, wireMode, fg, bg)
+  stateToCells(state, wireMode, fg, bg, depth)
   if (oled && octantPage !== lastPage) {
     gl.setOled(true, 2, octantPage ? 4 : 2, oledGain)
     lastPage = octantPage

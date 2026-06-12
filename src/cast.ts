@@ -10,23 +10,44 @@ import { encodeCells, sampleX, sampleY, type Mode } from './encode'
 import { measureCharRatio, rowsFor } from './grid'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
-import { createWireState, pack, stateChecksum, type WireMode, type WireState } from './wire'
+import { createWireState, pack, stateChecksum, type WireDepth, type WireMode, type WireState } from './wire'
 
 const q = new URLSearchParams(location.search)
 const cols = Number(q.get('cols') ?? 240)
 const wireMode: WireMode = q.get('wire') === 'mono' ? 'mono' : 'color'
+const depth: WireDepth = q.get('depth') === '565' ? '565' : '888'
+const p3 = q.get('p3') === '1'
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
 const mq = q.get('mode')
 const mode: Mode = mq === 'sextant' ? 'sextant' : mq === 'octant' ? 'octant' : 'quadrant'
 
 const video = document.getElementById('video') as HTMLVideoElement
-video.src = q.get('src') ?? '/bbb60.mp4'
+if (q.get('src') === 'gradient') {
+  // banding lab source: a slow-drifting smooth gradient - the case that
+  // exposes color quantization (skies, sunsets)
+  const c = document.createElement('canvas')
+  c.width = 1280
+  c.height = 720
+  const cx = c.getContext('2d')!
+  let t = 0
+  setInterval(() => {
+    t += 0.25
+    const g = cx.createLinearGradient(0, 0, 1280, 720)
+    g.addColorStop(0, `hsl(${(210 + t) % 360} 55% 6%)`)
+    g.addColorStop(1, `hsl(${(250 + t) % 360} 65% 52%)`)
+    cx.fillStyle = g
+    cx.fillRect(0, 0, 1280, 720)
+  }, 33)
+  video.srcObject = c.captureStream(30)
+} else {
+  video.src = q.get('src') ?? '/bbb60.mp4'
+}
 const canvas = document.getElementById('glcanvas') as HTMLCanvasElement
 const statsEl = document.getElementById('stats') as HTMLSpanElement
 
 const CHAR_RATIO = measureCharRatio()
-const sampler = createSampler()
-const gl = createRendererGL(canvas)
+const sampler = createSampler(p3)
+const gl = createRendererGL(canvas, { p3 })
 
 let rows = 0
 let fg = new Uint8Array(0)
@@ -126,7 +147,7 @@ function finishFrame(now: number) {
     state.glyph.fill(255)
     wantKey = false
   }
-  const pkt = pack(state, fg, bg, wireMode, mode === 'octant')
+  const pkt = pack(state, fg, bg, wireMode, mode === 'octant', depth)
   if (ws.readyState === WebSocket.OPEN) ws.send(pkt)
   if (!document.hidden) gl.render(fg, bg, cols, rows, mode === 'octant')
   stats.frames++
@@ -139,7 +160,7 @@ function finishFrame(now: number) {
     winBytes = 0
     winAt = now
     statsEl.textContent =
-      `cast · ${cols}×${rows} ${wireMode} · ${pool.length ? `${pool.length}-worker` : 'sync'} · ` +
+      `cast · ${cols}×${rows} ${wireMode}${wireMode === 'color' ? ` rgb${depth}` : ''} · ${pool.length ? `${pool.length}-worker` : 'sync'} · ` +
       `${stats.fps.toFixed(0)} fps · ${stats.kbps} kbps raw · ${stats.frames} frames · ws ${ws.readyState === 1 ? 'up' : 'down'}`
   }
 }

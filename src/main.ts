@@ -11,7 +11,7 @@ import { measureCharRatio, rowsFor } from './grid'
 import { createRenderer } from './render'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
-import { createWireState, deflatedSize, pack, statesEqual, unpack, type WireMode } from './wire'
+import { createWireState, deflatedSize, pack, statesEqual, unpack, type WireDepth, type WireMode } from './wire'
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T
 
@@ -207,7 +207,7 @@ declare global {
       bench: (n: number) => { iters: number; totalMs: number; msPerFrame: number; maxFps: number }
       benchGl: (n: number) => { iters: number; totalMs: number; msPerFrame: number; maxFps: number }
       benchCells: (n: number) => { iters: number; totalMs: number; msPerFrame: number; maxFps: number }
-      benchWire: (opts: { frames: number; cols: number; mode: Mode; wireMode: WireMode; fps: number }) => Promise<{
+      benchWire: (opts: { frames: number; cols: number; mode: Mode; wireMode: WireMode; fps: number; depth?: WireDepth }) => Promise<{
         frames: number; cells: number; keyBytes: number; avgDeltaBytes: number; rawKbps: number; deflateKbps: number; roundtripOk: boolean
       }>
       redraw: () => void
@@ -250,7 +250,7 @@ window.__gc = {
     const totalMs = performance.now() - t0
     return { iters: n, totalMs, msPerFrame: totalMs / n, maxFps: 1000 / (totalMs / n) }
   },
-  benchWire: async ({ frames, cols: wcols, mode: wmode, wireMode, fps }) => {
+  benchWire: async ({ frames, cols: wcols, mode: wmode, wireMode, fps, depth = '565' }) => {
     const wasPaused = video.paused
     video.pause()
     const t0 = video.currentTime
@@ -273,7 +273,7 @@ window.__gc = {
       await seek(1 + f / fps)
       const img = sampler.sample(video, wcols * sampleX(wmode), wrows * sampleY(wmode))
       encodeCells(img, wcols, wrows, wmode, 0, wfg, wbg)
-      const pkt = pack(sender, wfg, wbg, wireMode, wmode === 'octant')
+      const pkt = pack(sender, wfg, wbg, wireMode, wmode === 'octant', depth)
       packets.push(pkt)
       unpack(pkt, receiver)
       if (f === 0) keyBytes = pkt.length

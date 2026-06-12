@@ -17,6 +17,7 @@ const maxFrames = Number(process.env.GC_FRAMES ?? 0)
 let state: WireState | null = null
 let mode: WireMode = 'color'
 let octantPage = false
+let depth888 = false
 let frames = 0
 
 const up = (v: number, hi: number, lo: number) => {
@@ -44,11 +45,15 @@ function render(s: WireState) {
         const f = s.fg[i]
         const b = s.bg[i]
         if (f !== lastFg) {
-          out += `\x1b[38;2;${up(f, 16, 11)};${up(f, 11, 5)};${up(f, 5, 0)}m`
+          out += depth888
+            ? `\x1b[38;2;${(f >> 16) & 255};${(f >> 8) & 255};${f & 255}m`
+            : `\x1b[38;2;${up(f, 16, 11)};${up(f, 11, 5)};${up(f, 5, 0)}m`
           lastFg = f
         }
         if (b !== lastBg) {
-          out += `\x1b[48;2;${up(b, 16, 11)};${up(b, 11, 5)};${up(b, 5, 0)}m`
+          out += depth888
+            ? `\x1b[48;2;${(b >> 16) & 255};${(b >> 8) & 255};${b & 255}m`
+            : `\x1b[48;2;${up(b, 16, 11)};${up(b, 11, 5)};${up(b, 5, 0)}m`
           lastBg = b
         }
       }
@@ -67,6 +72,7 @@ ws.onmessage = (e) => {
   const pkt = new Uint8Array(e.data as ArrayBuffer)
   mode = pkt[0] & 1 ? 'color' : 'mono'
   octantPage = (pkt[0] & 2) !== 0
+  depth888 = (pkt[0] & 4) !== 0
   const cols = pkt[1] | (pkt[2] << 8)
   const rows = pkt[3] | (pkt[4] << 8)
   if (!state || state.cols !== cols || state.rows !== rows) {
