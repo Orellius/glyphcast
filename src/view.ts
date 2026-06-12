@@ -55,7 +55,7 @@ let lastPage: boolean | null = null
 let fg = new Uint8Array(0)
 let bg = new Uint8Array(0)
 
-const stats = { frames: 0, recvBytes: 0, kbps: 0, fps: 0, cells: 0 }
+const stats = { frames: 0, recvBytes: 0, kbps: 0, fps: 0, cells: 0, audioPkts: 0, audioCfg: false }
 let lastAt = 0
 let winBytes = 0
 let winAt = performance.now()
@@ -67,11 +67,88 @@ function layout(cols: number, rows: number) {
   gl.resize(cols * CHAR_RATIO * fs, rows * fs)
 }
 
+// audio: packets tagged with bit 7 (0x81 = AudioDecoder config JSON, 0x80 =
+// AAC frame + f64 timestamp). AudioContext needs a gesture - the unmute
+// button - then frames are decoded and scheduled on the context clock.
+type AudioCfg = { codec: string; sampleRate: number; channels: number; desc?: string }
+let audioCtx: AudioContext | null = null
+let audioDec: AudioDecoder | null = null
+let pendingCfg: AudioCfg | null = null
+let aBase = -1
+let aT0 = 0
+const unmuteBtn = document.getElementById('unmute') as HTMLButtonElement
+
+function playAudio(ad: AudioData) {
+  if (!audioCtx) {
+    ad.close()
+    return
+  }
+  const buf = audioCtx.createBuffer(ad.numberOfChannels, ad.numberOfFrames, ad.sampleRate)
+  const plane = new Float32Array(ad.numberOfFrames)
+  for (let c = 0; c < ad.numberOfChannels; c++) {
+    ad.copyTo(plane, { planeIndex: c, format: 'f32-planar' })
+    buf.copyToChannel(plane, c)
+  }
+  if (aBase < 0 || aBase + (ad.timestamp - aT0) / 1e6 < audioCtx.currentTime) {
+    // first chunk, loop wrap, or we fell behind: re-anchor with a small lead
+    aBase = audioCtx.currentTime + 0.25
+    aT0 = ad.timestamp
+  }
+  const src = audioCtx.createBufferSource()
+  src.buffer = buf
+  src.connect(audioCtx.destination)
+  src.start(aBase + (ad.timestamp - aT0) / 1e6)
+  ad.close()
+}
+
+function setupAudioDecoder() {
+  if (!audioCtx || !pendingCfg) return
+  audioDec?.close()
+  const cfg: AudioDecoderConfig = {
+    codec: pendingCfg.codec,
+    sampleRate: pendingCfg.sampleRate,
+    numberOfChannels: pendingCfg.channels,
+  }
+  if (pendingCfg.desc) cfg.description = Uint8Array.from(atob(pendingCfg.desc), (c) => c.charCodeAt(0))
+  audioDec = new AudioDecoder({ output: playAudio, error: (err) => (statsEl.textContent = `audio error: ${err.message}`) })
+  audioDec.configure(cfg)
+  aBase = -1
+}
+
+unmuteBtn.addEventListener('click', () => {
+  if (!audioCtx) {
+    audioCtx = new AudioContext()
+    setupAudioDecoder()
+    unmuteBtn.textContent = '🔊 on'
+  } else {
+    void audioCtx.close()
+    audioCtx = null
+    audioDec?.close()
+    audioDec = null
+    unmuteBtn.textContent = '🔇 unmute'
+  }
+})
+
 const ws = new WebSocket(`${wsUrl}/?role=view&ch=${encodeURIComponent(ch)}`)
 ws.binaryType = 'arraybuffer'
 ws.addEventListener('message', (e) => {
   if (typeof e.data === 'string') return
   const pkt = new Uint8Array(e.data as ArrayBuffer)
+  if (pkt[0] & 0x80) {
+    if (pkt[0] === 0x81) {
+      pendingCfg = JSON.parse(new TextDecoder().decode(pkt.subarray(1))) as AudioCfg
+      stats.audioCfg = true
+      unmuteBtn.style.display = 'block'
+      setupAudioDecoder()
+    } else if (pkt[0] === 0x80) {
+      stats.audioPkts++
+      if (audioDec && audioDec.state === 'configured') {
+        const ts = new DataView(pkt.buffer, pkt.byteOffset).getFloat64(1, true)
+        audioDec.decode(new EncodedAudioChunk({ type: 'key', timestamp: ts, data: pkt.subarray(9) }))
+      }
+    }
+    return
+  }
   wireMode = pkt[0] & 1 ? 'color' : 'mono'
   const octantPage = (pkt[0] & 2) !== 0
   const depth: WireDepth = pkt[0] & 4 ? '888' : '565'

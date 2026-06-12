@@ -10,9 +10,13 @@
 
 import { createFile, DataStream, type ISOFile } from 'mp4box'
 
+export type WcAudioConfig = { codec: string; sampleRate: number; channels: number; description?: Uint8Array }
+type WcAudioChunk = { data: Uint8Array; timestampUs: number }
+
 type WcSource = {
   pump: () => void
   dims: () => { w: number; h: number } | null
+  audioConfig: () => WcAudioConfig | null
   close: () => void
 }
 
@@ -20,16 +24,24 @@ export async function createWcSource(
   url: string,
   onFrame: (frame: VideoFrame) => void,
   onError: (msg: string) => void,
+  onAudio?: (chunk: WcAudioChunk) => void,
 ): Promise<WcSource> {
   const ab = await (await fetch(url)).arrayBuffer()
 
   const chunks: EncodedVideoChunk[] = []
+  const audioChunks: WcAudioChunk[] = []
   let config: VideoDecoderConfig | null = null
+  let audioCfg: WcAudioConfig | null = null
   let dims: { w: number; h: number } | null = null
 
   await new Promise<void>((resolve, reject) => {
     const file = createFile()
     let total = 0
+    let audioTotal = 0
+    let audioId = -1
+    const maybeDone = () => {
+      if (chunks.length >= total && audioChunks.length >= audioTotal) resolve()
+    }
     file.onError = (e: string) => reject(new Error(e))
     file.onReady = (info) => {
       const t = info.videoTracks[0]
@@ -44,11 +56,24 @@ export async function createWcSource(
       }
       if (desc) config.description = desc
       file.setExtractionOptions(t.id, null, { nbSamples: total })
+      const a = info.audioTracks[0]
+      if (a && a.audio && onAudio) {
+        audioId = a.id
+        audioTotal = a.nb_samples
+        audioCfg = { codec: a.codec, sampleRate: a.audio.sample_rate, channels: a.audio.channel_count }
+        const adesc = audioSpecificConfig(file, a.id)
+        if (adesc) audioCfg.description = adesc
+        file.setExtractionOptions(a.id, null, { nbSamples: audioTotal })
+      }
       file.start()
     }
-    file.onSamples = (_id, _user, samples) => {
+    file.onSamples = (id, _user, samples) => {
       for (const s of samples) {
         if (!s.data) continue
+        if (id === audioId) {
+          audioChunks.push({ data: s.data, timestampUs: Math.round((1e6 * s.cts) / s.timescale) })
+          continue
+        }
         chunks.push(
           new EncodedVideoChunk({
             type: s.is_sync ? 'key' : 'delta',
@@ -58,7 +83,7 @@ export async function createWcSource(
           }),
         )
       }
-      if (chunks.length >= total) resolve()
+      maybeDone()
     }
     const buf = ab as ArrayBuffer & { fileStart: number }
     buf.fileStart = 0
@@ -80,6 +105,7 @@ export async function createWcSource(
 
   const durationUs = chunks[chunks.length - 1].timestamp + (chunks[chunks.length - 1].duration ?? 0)
   let idx = 0
+  let audioIdx = 0
   let loopBaseUs = 0
   let clock0 = performance.now()
   let closed = false
@@ -87,6 +113,14 @@ export async function createWcSource(
 
   function pump() {
     if (closed) return
+    // ship audio ahead of the clock (the viewer schedules by timestamp)
+    if (onAudio) {
+      const aheadUs = (performance.now() - clock0) * 1000 + 600_000
+      while (audioIdx < audioChunks.length && loopBaseUs + audioChunks[audioIdx].timestampUs - t0 <= aheadUs) {
+        const a = audioChunks[audioIdx++]
+        onAudio({ data: a.data, timestampUs: loopBaseUs + a.timestampUs - t0 })
+      }
+    }
     // keep the decoder fed a little ahead
     while (idx < chunks.length && decoder.decodeQueueSize < 6 && ready.length < 6) {
       decoder.decode(chunks[idx++])
@@ -95,6 +129,7 @@ export async function createWcSource(
       // loop: restart the stream clock and re-feed from the keyframe
       loopBaseUs += durationUs
       idx = 0
+      audioIdx = 0
       return
     }
     const nowUs = (performance.now() - clock0) * 1000
@@ -115,6 +150,7 @@ export async function createWcSource(
   return {
     pump,
     dims: () => dims,
+    audioConfig: () => audioCfg,
     close: () => {
       closed = true
       for (const f of ready) f.close()
@@ -134,6 +170,22 @@ function trackDescription(file: ISOFile, trackId: number): Uint8Array | undefine
       box.write(stream)
       return new Uint8Array(stream.buffer as ArrayBuffer, 8) // skip box size+type header
     }
+  }
+  return undefined
+}
+
+// AAC AudioSpecificConfig from the esds box (DecoderConfigDescriptor tag 4 ->
+// DecoderSpecificInfo tag 5); box layout walked loosely, absent = no desc
+function audioSpecificConfig(file: ISOFile, trackId: number): Uint8Array | undefined {
+  try {
+    const trak = (file as unknown as { getTrackById: (id: number) => { mdia: { minf: { stbl: { stsd: { entries: { esds?: { esd?: { descs?: { tag: number; descs?: { tag: number; data?: Uint8Array }[] }[] } } }[] } } } } } }).getTrackById(trackId)
+    for (const entry of trak.mdia.minf.stbl.stsd.entries) {
+      const dcd = entry.esds?.esd?.descs?.find((d) => d.tag === 4)
+      const dsi = dcd?.descs?.find((d) => d.tag === 5)
+      if (dsi?.data) return new Uint8Array(dsi.data)
+    }
+  } catch {
+    // tolerated: stream plays silent rather than failing the cast
   }
   return undefined
 }

@@ -70,6 +70,7 @@ ws.binaryType = 'arraybuffer'
 ws.onmessage = (e) => {
   if (typeof e.data === 'string') return
   const pkt = new Uint8Array(e.data as ArrayBuffer)
+  if (pkt[0] & 0x80) return // audio packets - text receivers skip them
   mode = pkt[0] & 1 ? 'color' : 'mono'
   octantPage = (pkt[0] & 2) !== 0
   depth888 = (pkt[0] & 4) !== 0

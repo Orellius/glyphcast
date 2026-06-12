@@ -10,7 +10,7 @@ import { encodeCells, sampleX, sampleY, type Mode } from './encode'
 import { measureCharRatio, rowsFor } from './grid'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
-import { createWcSource } from './wcsource'
+import { createWcSource, type WcAudioConfig } from './wcsource'
 import { createWireState, pack, stateChecksum, type WireDepth, type WireMode, type WireState } from './wire'
 
 const q = new URLSearchParams(location.search)
@@ -70,7 +70,11 @@ const ch = q.get('ch') ?? 'main'
 const ws = new WebSocket(`${wsUrl}/?role=cast&ch=${encodeURIComponent(ch)}`)
 ws.binaryType = 'arraybuffer'
 ws.addEventListener('message', (e) => {
-  if (e.data === 'key') wantKey = true
+  if (e.data === 'key') {
+    wantKey = true
+    // late joiners need the audio config too
+    if (audioCfgPkt && ws.readyState === WebSocket.OPEN) ws.send(audioCfgPkt)
+  }
 })
 
 function layout(vw = video.videoWidth || 16, vh = video.videoHeight || 9) {
@@ -185,6 +189,35 @@ let sourceIsWc = wc
 let wcPump: (() => void) | null = null
 let wcSrc: Awaited<ReturnType<typeof createWcSource>> | null = null
 
+// audio rides the same WS as tagged packets: 0x81 = decoder config (JSON),
+// 0x80 = one AAC frame ([1..8] = f64 LE timestamp µs). Video header bytes
+// never have bit 7 set, so old receivers skip these cleanly.
+let audioCfgPkt: Uint8Array | null = null
+
+function buildAudioCfgPkt(c: WcAudioConfig): Uint8Array {
+  const body = new TextEncoder().encode(
+    JSON.stringify({
+      codec: c.codec,
+      sampleRate: c.sampleRate,
+      channels: c.channels,
+      desc: c.description ? btoa(String.fromCharCode(...c.description)) : undefined,
+    }),
+  )
+  const pkt = new Uint8Array(1 + body.length)
+  pkt[0] = 0x81
+  pkt.set(body, 1)
+  return pkt
+}
+
+function sendAudio(data: Uint8Array, timestampUs: number) {
+  if (ws.readyState !== WebSocket.OPEN) return
+  const pkt = new Uint8Array(9 + data.length)
+  pkt[0] = 0x80
+  new DataView(pkt.buffer).setFloat64(1, timestampUs, true)
+  pkt.set(data, 9)
+  ws.send(pkt)
+}
+
 async function startWc(url: string) {
   statsEl.textContent = 'loading source…'
   try {
@@ -192,8 +225,12 @@ async function startWc(url: string) {
       url,
       (frame) => castImage(frame, performance.now()),
       (msg) => (statsEl.textContent = `wc error: ${msg}`),
+      (a) => sendAudio(a.data, a.timestampUs),
     )
     wcSrc?.close()
+    const ac = s.audioConfig()
+    audioCfgPkt = ac ? buildAudioCfgPkt(ac) : null
+    if (audioCfgPkt && ws.readyState === WebSocket.OPEN) ws.send(audioCfgPkt)
     userPaused = true // disarm the video auto-resume; the element is out of the loop now
     if (!video.paused) video.pause()
     sourceIsWc = true

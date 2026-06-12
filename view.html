@@ -11,7 +11,12 @@
     #glcanvas { display: block; max-width: 100vw; max-height: 100vh; cursor: pointer; }
     #stats { position: fixed; left: 14px; bottom: 12px; color: #5c5c66;
       transition: opacity 0.6s; pointer-events: none; }
+    #unmute { position: fixed; right: 14px; bottom: 10px; display: none;
+      background: rgba(23, 23, 27, 0.85); color: #c9c9d1; border: 1px solid #2a2a30;
+      border-radius: 999px; padding: 5px 12px; font: inherit; cursor: pointer;
+      transition: opacity 0.6s; }
     body.idle #stats { opacity: 0; }
+    body.idle #unmute { opacity: 0; }
     body.idle #glcanvas { cursor: none; }
   </style>
 </head>
@@ -20,6 +25,7 @@
     <canvas id="glcanvas"></canvas>
   </div>
   <span id="stats">tuning…</span>
+  <button id="unmute">🔇 unmute</button>
   <script type="module" src="/src/view.ts"></script>
 </body>
 </html>
