@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>glyphcast — the lab</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <style>
+    body {
+      margin: 0;
+      background: #0a0a0c;
+      color: #8a8a93;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 12px;
+    }
+    #wrap { width: min(94vw, 1500px); margin: 20px auto; }
+    #stage {
+      line-height: 1;
+      white-space: pre;
+      user-select: text;
+      cursor: pointer;
+      margin: 0;
+      font-family: Menlo, Consolas, monospace;
+      -webkit-font-smoothing: antialiased;
+    }
+    #bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      padding: 14px 2px;
+    }
+    #bar label { display: flex; align-items: center; gap: 6px; }
+    #bar input[type="range"] { width: 90px; accent-color: #3ddc84; }
+    select, button {
+      background: #17171b;
+      color: #c9c9d1;
+      border: 1px solid #2a2a30;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    #stats { margin-left: auto; color: #5c5c66; }
+    #head { display: flex; align-items: baseline; gap: 14px; padding: 12px 2px 10px; }
+    #head strong { color: #c9c9d1; }
+    #head a { color: #3ddc84; margin-left: auto; text-decoration: none; }
+    #head a:hover { text-decoration: underline; }
+    #file { display: none; }
+    video { display: none; }
+    #glcanvas { display: block; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="head">
+      <span><strong>glyphcast</strong> — video as text. Every frame is a grid of Unicode glyphs; the wire never carries pixels. Don't believe it? "copy frame as text".</span>
+      <a href="https://github.com/Orellius/glyphcast">github</a>
+    </div>
+    <canvas id="glcanvas"></canvas>
+    <pre id="stage"></pre>
+    <div id="bar">
+      <select id="engine">
+        <option value="gpu">gpu engine</option>
+        <option value="dom">dom text</option>
+      </select>
+      <select id="mode">
+        <option value="quadrant">quadrant (2×2)</option>
+        <option value="sextant">sextant (2×3)</option>
+        <option value="octant">octant (2×4, sharpest)</option>
+        <option value="halfblock">halfblock</option>
+        <option value="ascii">ascii art</option>
+      </select>
+      <label>cols <input id="cols" type="range" min="80" max="1920" step="20" value="640" /><span id="colsv">640</span></label>
+      <label>quant <input id="quant" type="range" min="0" max="5" step="1" value="0" /></label>
+      <label>sharp <input id="sharp" type="range" min="0" max="30" step="1" value="0" /></label>
+      <label>glow <input id="glow" type="range" min="0" max="24" step="1" value="0" /></label>
+      <button id="playpause">pause</button>
+      <button id="copy">copy frame as text</button>
+      <button id="open">open video…</button>
+      <input id="file" type="file" accept="video/*" />
+      <span id="stats">loading…</span>
+    </div>
+  </div>
+  <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay></video>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

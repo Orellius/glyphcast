@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>glyphTV player</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
     html, body { margin: 0; height: 100%; background: #0a0a0c; overflow: hidden;
       color: #8a8a93; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
@@ -17,7 +18,7 @@
     #modes button:last-child { border-right: none; }
     #modes button.on { background: #2b2b33; color: #fff; }
     label { display: flex; align-items: center; gap: 6px; }
-    input[type="range"] { width: 130px; accent-color: #e8632c; }
+    input[type="range"] { width: 130px; accent-color: #3ddc84; }
     #stats { margin-left: auto; color: #5c5c66; }
     #grid { display: grid; gap: 6px; padding: 0 14px 14px;
       height: calc(100vh - 54px); box-sizing: border-box; }
@@ -44,7 +45,7 @@
   <div id="grid"></div>
   <div id="drop">drop a video or image to play it</div>
   <input id="file" type="file" accept="video/*,image/*" />
-  <video id="video" src="/demo1080.mp4" muted loop playsinline autoplay></video>
+  <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay></video>
   <script type="module" src="/src/player.ts"></script>
 </body>
 </html>

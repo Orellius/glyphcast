@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# glyphcast stranger-verify: the claim is "video as text, lossless wire".
+# This starts the relay + dev server, opens a caster tab (Big Buck Bunny),
+# and renders the SAME stream in your terminal as real Unicode glyphs.
+# Prereqs: bun (https://bun.sh). Octant fonts look best in Ghostty/kitty/VTE.
+set -euo pipefail
+cd "$(dirname "$0")"
+
+command -v bun >/dev/null 2>&1 || { echo "bun is required: https://bun.sh"; exit 1; }
+[ -d node_modules ] || { echo "[0/3] bun install..."; bun install --frozen-lockfile; }
+
+if lsof -nP -iTCP:8788 -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "port 8788 is busy - stop the existing relay first (lsof -nP -iTCP:8788)"
+  exit 1
+fi
+PORT=5173
+while lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; do PORT=$((PORT + 1)); done
+
+echo "[1/3] relay on :8788, vite on :$PORT..."
+bun server/relay.ts >/dev/null 2>&1 &
+RELAY=$!
+bun run dev -- --port "$PORT" --strictPort >/dev/null 2>&1 &
+VITE=$!
+trap 'kill $RELAY $VITE 2>/dev/null' EXIT
+sleep 2
+
+CAST="http://localhost:$PORT/cast.html?ch=verify&src=/bbb60.mp4"
+echo "[2/3] opening the caster: $CAST"
+case "$(uname)" in
+  Darwin) open "$CAST" ;;
+  *) xdg-open "$CAST" >/dev/null 2>&1 || echo "    open it yourself: $CAST" ;;
+esac
+sleep 4
+
+echo "[3/3] your terminal is now a receiver - 120 frames of the same stream:"
+echo "      (if nothing appears, the caster tab may not have loaded yet - rerun)"
+sleep 1
+GC_CH=verify GC_FRAMES=120 bun clients/term.ts || true
+
+cat <<'EOF'
+
+That was text. Every cell: one printable Unicode glyph + two colors.
+
+The lossless proof (identical checksums, browser vs terminal):
+  1. In the caster tab, click the canvas to pause it.
+  2. In its devtools console:  __gcc.checksum()
+  3. In another terminal:      GC_CH=verify GC_FRAMES=1 bun clients/term.ts
+     It prints {frames, checksum} to stderr. The numbers must match -
+     the wire carries the exact same cells to every receiver.
+
+Relay and dev server stay up until you ctrl-c this script.
+EOF
+wait

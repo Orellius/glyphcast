@@ -1,0 +1,7 @@
+node_modules
+dist
+public/demo*.mp4
+public/sample.mp4
+docs/
+*.log
+.claude/

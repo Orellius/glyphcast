@@ -3,77 +3,301 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>glyphcast — video that is text</title>
+  <title>glyphcast — video as text</title>
+  <meta name="description" content="A typography-only video codec: every frame is a grid of Unicode glyphs with per-cell colors. The wire never carries pixels." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
+    @font-face {
+      font-family: 'Archivo Black';
+      src: url('/fonts/archivo-black.woff2') format('woff2');
+      font-weight: 400;
+      font-display: swap;
+    }
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       background: #0a0a0c;
       color: #8a8a93;
-      font-family: ui-monospace, Menlo, monospace;
-      font-size: 12px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.6;
     }
-    #wrap { width: min(94vw, 1500px); margin: 20px auto; }
-    #stage {
-      line-height: 1;
-      white-space: pre;
-      user-select: text;
-      cursor: pointer;
-      margin: 0;
-      font-family: Menlo, Consolas, monospace;
-      -webkit-font-smoothing: antialiased;
+    .display {
+      font-family: 'Archivo Black', 'Arial Black', sans-serif;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.01em;
+      color: #e7e7ec;
     }
-    #bar {
+    #bg {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: -1;
+    }
+    #hero-canvas {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #hero {
+      min-height: 100dvh;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 18px;
-      flex-wrap: wrap;
-      padding: 14px 2px;
+      justify-content: center;
+      gap: 0;
+      padding: 24px;
     }
-    #bar label { display: flex; align-items: center; gap: 6px; }
-    #bar input[type="range"] { width: 90px; accent-color: #e8632c; }
-    select, button {
-      background: #17171b;
-      color: #c9c9d1;
+    #panel {
+      background: rgba(10, 10, 12, 0.66);
+      backdrop-filter: blur(3px);
       border: 1px solid #2a2a30;
+      border-radius: 10px;
+      padding: 30px 34px;
+      max-width: 620px;
+    }
+    #logo { display: flex; align-items: center; gap: 10px; width: fit-content; cursor: context-menu; margin-bottom: 18px; }
+    #logo img { user-select: none; }
+    #logo .word { font-size: 18px; font-weight: 600; color: #e7e7ec; letter-spacing: 0.5px; }
+    #logo .word em { color: #3ddc84; font-style: normal; }
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(34px, 5.2vw, 58px);
+      line-height: 1.04;
+    }
+    h1 em { color: #3ddc84; font-style: normal; }
+    #logomenu {
+      position: fixed;
+      background: #131316;
+      border: 1px solid #2a2a30;
+      border-radius: 8px;
+      padding: 5px;
+      z-index: 10;
+      min-width: 210px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    }
+    #logomenu[hidden] { display: none; }
+    #logomenu button, #logomenu a {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: 0;
       border-radius: 4px;
-      padding: 4px 10px;
+      padding: 7px 11px;
+      color: #c9c9d1;
       font: inherit;
       cursor: pointer;
+      text-decoration: none;
+      text-transform: none;
+      letter-spacing: normal;
+      box-shadow: none;
     }
-    #stats { margin-left: auto; color: #5c5c66; }
-    #file { display: none; }
+    #logomenu button:hover, #logomenu a:hover { background: #1d1d22; color: #e7e7ec; }
+    #panel p { margin: 0 0 20px; }
+    #panel strong { color: #c9c9d1; font-weight: 600; }
+    #actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    button, .btn {
+      background: #17171b;
+      color: #e7e7ec;
+      border: 1px solid #2f2f36;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      line-height: 1;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+    button:hover, .btn:hover { border-color: #3ddc84; color: #3ddc84; }
+    .btn.primary, button.primary {
+      background: #3ddc84;
+      color: #0a0a0c;
+      border-color: #3ddc84;
+      box-shadow: none;
+    }
+    .btn.primary:hover, button.primary:hover { background: #5ce69a; color: #0a0a0c; }
+    #tapplay {
+      position: fixed;
+      left: 50%;
+      bottom: 12dvh;
+      transform: translateX(-50%);
+      background: #3ddc84;
+      color: #0a0a0c;
+      border-color: #3ddc84;
+      box-shadow: none;
+    }
+    #hint {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #5c5c66;
+      animation: sink 2.4s ease-in-out infinite;
+    }
+    @keyframes sink { 50% { transform: translate(-50%, 6px); } }
+    @media (prefers-reduced-motion: reduce) { #hint { animation: none; } }
+    main {
+      position: relative;
+      background: #0a0a0c;
+      border-top: 1px solid #2a2a30;
+    }
+    section { max-width: 860px; margin: 0 auto; padding: 60px 24px; }
+    section + section { border-top: 1px solid #1c1c21; }
+    h2 {
+      margin: 0 0 20px;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+    h2::before { content: '» '; color: #3ddc84; }
+    #pipe {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+      margin: 0 0 18px;
+      padding: 0;
+    }
+    #pipe li {
+      background: #131316;
+      border: 1px solid #26262c;
+      border-radius: 4px;
+      padding: 5px 11px;
+      color: #b9b9c2;
+    }
+    #pipe li + li::before {
+      content: '→';
+      color: #3ddc84;
+      margin-right: 8px;
+      margin-left: -3px;
+    }
+    .term {
+      background: #060607;
+      border: 1px solid #26262c;
+      border-radius: 6px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      margin: 0 0 14px;
+      color: #b9b9c2;
+      line-height: 1.5;
+    }
+    .term .ps { color: #3ddc84; }
+    .term .out { color: #6fbf73; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0 4px; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #1c1c21; vertical-align: top; }
+    th { color: #c9c9d1; font-weight: 600; }
+    td:last-child { color: #b9b9c2; }
+    footer {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px 24px 40px;
+      color: #5c5c66;
+      display: flex;
+      gap: 14px;
+    }
+    footer a { color: #8a8a93; text-decoration: none; }
+    footer a:hover { color: #3ddc84; }
     video { display: none; }
-    #glcanvas { display: block; cursor: pointer; }
+    @media (max-width: 760px) {
+      #panel { padding: 22px; }
+      section { padding: 40px 18px; }
+    }
   </style>
 </head>
 <body>
-  <div id="wrap">
-    <canvas id="glcanvas"></canvas>
-    <pre id="stage"></pre>
-    <div id="bar">
-      <select id="engine">
-        <option value="gpu">gpu engine</option>
-        <option value="dom">dom text</option>
-      </select>
-      <select id="mode">
-        <option value="quadrant">quadrant (2×2)</option>
-        <option value="sextant">sextant (2×3)</option>
-        <option value="octant">octant (2×4, sharpest)</option>
-        <option value="halfblock">halfblock</option>
-        <option value="ascii">ascii art</option>
-      </select>
-      <label>cols <input id="cols" type="range" min="80" max="1920" step="20" value="640" /><span id="colsv">640</span></label>
-      <label>quant <input id="quant" type="range" min="0" max="5" step="1" value="0" /></label>
-      <label>sharp <input id="sharp" type="range" min="0" max="30" step="1" value="0" /></label>
-      <label>glow <input id="glow" type="range" min="0" max="24" step="1" value="0" /></label>
-      <button id="playpause">pause</button>
-      <button id="copy">copy frame as text</button>
-      <button id="open">open video…</button>
-      <input id="file" type="file" accept="video/*" />
-      <span id="stats">loading…</span>
+  <div id="bg"><canvas id="hero-canvas"></canvas></div>
+
+  <section id="hero">
+    <div id="panel">
+      <div id="logo" title="right-click for brand assets">
+        <img id="logomark" src="/brand/glyphcast-mark.svg" alt="" width="26" height="26" draggable="false" />
+        <span class="word">glyph<em>cast</em></span>
+      </div>
+      <h1 class="display">Video<br />as <em>text</em>.</h1>
+      <p>This background is not a video. It is <strong><span id="cells">…</span> cells</strong> —
+        each one a printable Unicode glyph plus two colors — re-encoded from the
+        source every frame, entirely on your GPU.</p>
+      <div id="actions">
+        <button id="copyframe" class="primary">copy this frame as text</button>
+        <a class="btn" href="/lab.html">open the lab</a>
+      </div>
     </div>
+    <button id="tapplay" hidden>autoplay blocked — tap to start</button>
+    <div id="hint">▼</div>
+  </section>
+
+  <div id="logomenu" hidden>
+    <button id="lm-copysvg">copy logo as SVG</button>
+    <button id="lm-copytext">copy logo as text</button>
+    <a href="/brand/glyphcast-mark.svg" download>download mark</a>
+    <a href="/brand/index.html">brand guidelines</a>
   </div>
-  <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay></video>
-  <script type="module" src="/src/main.ts"></script>
+
+  <main>
+    <section>
+      <h2 class="display">how it works</h2>
+      <ol id="pipe">
+        <li>source</li><li>sample</li><li>encode cells</li><li>delta-pack</li><li>websocket</li><li>unpack</li><li>one GL draw</li>
+      </ol>
+      <p>Every frame is a grid of monospace cells. A cell is one glyph — octant
+        (2×4 subpixels, U+1CD00), sextant (2×3), quadrant (2×2), halfblock, or an
+        ascii ramp — plus a foreground and background color. Frames go over the
+        wire as skip/emit runs against the previous grid: byte-aligned, no entropy
+        coding, dumb enough for a terminal or an MCU to decode.
+        <strong>The wire never carries pixels.</strong></p>
+    </section>
+
+    <section>
+      <h2 class="display">a terminal is a full receiver</h2>
+      <pre class="term"><span class="ps">$</span> GC_CH=verify GC_FRAMES=120 bun clients/term.ts
+<span class="out">{"frames":120,"checksum":2291410159,"cols":240,"rows":81}</span></pre>
+      <p>The same stream the browser draws, rendered with ANSI truecolor escapes —
+        real U+1CD00 octant glyphs in your terminal. The checksum matches the
+        caster's: the wire is lossless by design. That output is a real end-to-end
+        run, not a mock.</p>
+    </section>
+
+    <section>
+      <h2 class="display">measured, not estimated</h2>
+      <p>M4 Max, Chrome-family browser, Big Buck Bunny 1080p60. Every row is
+        reproducible in the lab.</p>
+      <table>
+        <tr><th>Claim</th><th>Measured</th></tr>
+        <tr><td>Text renders at video fps</td><td>138,880 cells @ 60+ fps, 0ms CPU, 1 draw call</td></tr>
+        <tr><td>4K-class panel from typography</td><td>1,248,000 cells = 3840×2600 subpixel lattice @ 67 fps</td></tr>
+        <tr><td>Wire format is lossless</td><td>pack→unpack states identical (checksum), every config</td></tr>
+        <tr><td>Ultra-low bandwidth tier</td><td>160 cols quadrant @ 24fps: color ≈ 1.8 Mbps · mono ≈ 266 kbps</td></tr>
+        <tr><td>A terminal is a full receiver</td><td>checksum identical to caster; 4,337 octant glyphs in one frame</td></tr>
+        <tr><td>Million-cell broadcast</td><td>1,248,000 cells streamed @ 32 fps (8-worker caster)</td></tr>
+      </table>
+    </section>
+
+    <section>
+      <h2 class="display">play with it</h2>
+      <div id="actions">
+        <a class="btn primary" href="/lab.html">the lab — engines, modes, benches</a>
+        <a class="btn" href="/player.html">the player — drop a video on it</a>
+        <a class="btn" href="https://github.com/Orellius/glyphcast">github</a>
+      </div>
+    </section>
+
+    <footer>
+      <span>glyphcast.tv</span>
+      <a href="/brand/index.html">brand</a>
+      <a href="https://github.com/Orellius">Orellius</a>
+    </footer>
+  </main>
+
+  <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay crossorigin="anonymous"></video>
+  <script type="module" src="/src/landing.ts"></script>
 </body>
 </html>

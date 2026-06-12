@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && rm -f dist/demo*.mp4 dist/sample.mp4",
     "preview": "vite preview",
     "relay": "bun server/relay.ts",
+    "verify": "bash verify",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
