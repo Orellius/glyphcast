@@ -20,6 +20,7 @@ export type WireState = {
   glyph: Uint8Array
   fg: Uint32Array
   bg: Uint32Array
+  scratch?: Uint8Array
 }
 
 export function createWireState(cols: number, rows: number): WireState {
@@ -42,7 +43,13 @@ const payloadBytes = (mode: WireMode, depth: WireDepth) => (mode === 'color' ? (
 export function pack(state: WireState, fg: Uint8Array, bg: Uint8Array, mode: WireMode, octantPage = false, depth: WireDepth = '565'): Uint8Array {
   const n = state.cols * state.rows
   const pb = payloadBytes(mode, depth)
-  const out = new Uint8Array(HDR + n * (pb + 4) + 8)
+  // scratch reuse: at high cell counts a fresh multi-MB buffer per frame is
+  // GC-storm fuel. The returned view aliases state.scratch - callers must
+  // consume it before the next pack on the same state (ws.send copies
+  // synchronously; benches must .slice() to retain).
+  const cap = HDR + n * (pb + 4) + 8
+  if (!state.scratch || state.scratch.length < cap) state.scratch = new Uint8Array(cap)
+  const out = state.scratch
   out[0] = (mode === 'color' ? 1 : 0) | (octantPage ? 2 : 0) | (depth === '888' ? 4 : 0)
   out[1] = state.cols & 255
   out[2] = state.cols >> 8

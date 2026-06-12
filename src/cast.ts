@@ -96,6 +96,7 @@ const PARALLEL_MIN_CELLS = 120_000
 let pool: Worker[] = []
 let poolSeq = 0
 let inFlight = false
+let inFlightAt = 0
 let arrived = 0
 
 function initPool() {
@@ -140,9 +141,17 @@ function castFrame(now: number) {
 // shared by the <video> path and the WebCodecs path
 function castImage(src: HTMLVideoElement | VideoFrame, now: number) {
   if (!state) return
+  // backpressure gate: if the socket can't drain, skip frames instead of
+  // ballooning the heap with unsent megabytes (the 1920-col stall storm)
+  if (ws.readyState === WebSocket.OPEN && ws.bufferedAmount > 8_000_000) return
   if (pool.length) {
-    if (inFlight) return
+    if (inFlight) {
+      // watchdog: a crashed/dropped band must not wedge the caster forever
+      if (now - inFlightAt > 2000) inFlight = false
+      else return
+    }
     inFlight = true
+    inFlightAt = now
     arrived = 0
     poolSeq++
     const seq = poolSeq

@@ -273,7 +273,7 @@ window.__gc = {
       await seek(1 + f / fps)
       const img = sampler.sample(video, wcols * sampleX(wmode), wrows * sampleY(wmode))
       encodeCells(img, wcols, wrows, wmode, 0, wfg, wbg)
-      const pkt = pack(sender, wfg, wbg, wireMode, wmode === 'octant', depth)
+      const pkt = pack(sender, wfg, wbg, wireMode, wmode === 'octant', depth).slice()
       packets.push(pkt)
       unpack(pkt, receiver)
       if (f === 0) keyBytes = pkt.length
