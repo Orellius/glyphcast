@@ -7,6 +7,7 @@
 // Test strategy: live browser smoke via window.__gc asserts + PSNR vs source.
 
 import { encodeCells, encodeFrame, frameToPlainText, sharpen, type Mode } from './encode'
+import { measureCharRatio, rowsFor } from './grid'
 import { createRenderer } from './render'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
@@ -20,13 +21,6 @@ const video = $<HTMLVideoElement>('video')
 const wrap = $<HTMLDivElement>('wrap')
 const statsEl = $<HTMLSpanElement>('stats')
 
-const FONT = 'Menlo, Consolas, monospace'
-
-function measureCharRatio(): number {
-  const ctx = document.createElement('canvas').getContext('2d')!
-  ctx.font = `100px ${FONT}`
-  return ctx.measureText('▀').width / 100
-}
 const CHAR_RATIO = measureCharRatio()
 
 type Engine = 'gpu' | 'dom'
@@ -47,7 +41,7 @@ const glRenderer = createRendererGL(glCanvas)
 function layout() {
   const vw = video.videoWidth || 16
   const vh = video.videoHeight || 9
-  rows = Math.max(1, Math.round(cols * CHAR_RATIO * (vh / vw)))
+  rows = rowsFor(cols, CHAR_RATIO, vw, vh)
   const fs = wrap.clientWidth / (cols * CHAR_RATIO)
   stage.style.fontSize = `${fs}px`
   stage.style.lineHeight = `${fs}px`
@@ -240,7 +234,7 @@ window.__gc = {
     const wasPaused = video.paused
     video.pause()
     const t0 = video.currentTime
-    const wrows = Math.max(1, Math.round(wcols * CHAR_RATIO * (video.videoHeight / video.videoWidth)))
+    const wrows = rowsFor(wcols, CHAR_RATIO, video.videoWidth, video.videoHeight)
     const n = wcols * wrows
     const sx = wmode === 'quadrant' ? 2 : 1
     const wfg = new Uint8Array(n * 4)

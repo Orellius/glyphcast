@@ -122,6 +122,47 @@ export function statesEqual(a: WireState, b: WireState, mode: WireMode): boolean
   return true
 }
 
+// expands receiver state into the RGBA cell buffers renderer_gl.render eats:
+// fg rgb (565->888 bit-replicated) + glyph idx in fg alpha; bg rgb. Mono mode
+// renders white-on-black from glyphs alone.
+export function stateToCells(state: WireState, mode: WireMode, fg: Uint8Array, bg: Uint8Array): void {
+  const n = state.cols * state.rows
+  for (let i = 0; i < n; i++) {
+    const o = i * 4
+    if (mode === 'color') {
+      const f = state.fg[i]
+      const b = state.bg[i]
+      const fr = (f >> 11) & 31
+      const fgr = (f >> 5) & 63
+      const fb = f & 31
+      const br = (b >> 11) & 31
+      const bgr = (b >> 5) & 63
+      const bb = b & 31
+      fg[o] = (fr << 3) | (fr >> 2)
+      fg[o + 1] = (fgr << 2) | (fgr >> 4)
+      fg[o + 2] = (fb << 3) | (fb >> 2)
+      bg[o] = (br << 3) | (br >> 2)
+      bg[o + 1] = (bgr << 2) | (bgr >> 4)
+      bg[o + 2] = (bb << 3) | (bb >> 2)
+    } else {
+      fg[o] = fg[o + 1] = fg[o + 2] = 230
+      bg[o] = bg[o + 1] = bg[o + 2] = 0
+    }
+    fg[o + 3] = state.glyph[i]
+    bg[o + 3] = 255
+  }
+}
+
+// cheap state fingerprint for cast/view convergence asserts in E2E
+export function stateChecksum(state: WireState, mode: WireMode): number {
+  let h = 0
+  for (let i = 0; i < state.glyph.length; i++) {
+    h = (h * 31 + state.glyph[i]) >>> 0
+    if (mode === 'color') h = (h * 31 + state.fg[i] + state.bg[i] * 7) >>> 0
+  }
+  return h
+}
+
 // total deflated size of a frame sequence with shared context - honest stand-in
 // for WS permessage-deflate with context takeover
 export async function deflatedSize(frames: Uint8Array[]): Promise<number> {

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>glyphcast — view</title>
+  <style>
+    body { margin: 0; background: #0a0a0c; color: #8a8a93; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+    #wrap { width: min(94vw, 1500px); margin: 20px auto; }
+    #glcanvas { display: block; }
+    #stats { display: block; padding: 12px 2px; color: #5c5c66; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <canvas id="glcanvas"></canvas>
+    <span id="stats">waiting for caster…</span>
+  </div>
+  <script type="module" src="/src/view.ts"></script>
+</body>
+</html>
