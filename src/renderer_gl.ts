@@ -443,12 +443,14 @@ export function createRendererGL(canvas: HTMLCanvasElement, opts: { p3?: boolean
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, cols, rows, gl.RGBA, gl.UNSIGNED_BYTE, bg)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     },
-    renderDirect(video: HTMLVideoElement, cols: number, rows: number, mode: keyof typeof MODE_IDX, qShift: number, sharp: number) {
+    renderDirect(video: HTMLVideoElement | HTMLImageElement, cols: number, rows: number, mode: keyof typeof MODE_IDX, qShift: number, sharp: number) {
       gl.useProgram(progD)
       gl.activeTexture(gl.TEXTURE3)
-      if (video.videoWidth !== vidW || video.videoHeight !== vidH) {
-        vidW = video.videoWidth
-        vidH = video.videoHeight
+      const sw = video instanceof HTMLVideoElement ? video.videoWidth : video.naturalWidth
+      const sh = video instanceof HTMLVideoElement ? video.videoHeight : video.naturalHeight
+      if (sw !== vidW || sh !== vidH) {
+        vidW = sw
+        vidH = sh
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video)
       } else {
         gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, video)

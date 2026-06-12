@@ -7,33 +7,44 @@
   <style>
     html, body { margin: 0; height: 100%; background: #0a0a0c; overflow: hidden;
       color: #8a8a93; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
-    #bar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; }
-    select, button {
+    #bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; flex-wrap: wrap; }
+    button {
       background: #17171b; color: #c9c9d1; border: 1px solid #2a2a30;
-      border-radius: 4px; padding: 4px 10px; font: inherit; cursor: pointer;
+      border-radius: 6px; padding: 5px 12px; font: inherit; cursor: pointer;
     }
+    #modes { display: flex; gap: 0; border: 1px solid #2a2a30; border-radius: 8px; overflow: hidden; }
+    #modes button { border: none; border-radius: 0; border-right: 1px solid #2a2a30; padding: 6px 12px; }
+    #modes button:last-child { border-right: none; }
+    #modes button.on { background: #2b2b33; color: #fff; }
+    label { display: flex; align-items: center; gap: 6px; }
+    input[type="range"] { width: 130px; accent-color: #e8632c; }
     #stats { margin-left: auto; color: #5c5c66; }
     #grid { display: grid; gap: 6px; padding: 0 14px 14px;
-      height: calc(100vh - 52px); box-sizing: border-box; }
-    .pane { position: relative; background: #000; border-radius: 6px; overflow: hidden;
+      height: calc(100vh - 54px); box-sizing: border-box; }
+    .pane { position: relative; background: #000; border-radius: 8px; overflow: hidden;
       display: flex; align-items: center; justify-content: center; }
     .pane canvas { display: block; max-width: 100%; max-height: 100%; cursor: pointer; }
     .chip { position: absolute; top: 8px; left: 8px; padding: 3px 9px;
       background: rgba(10, 10, 14, 0.78); border: 1px solid #2a2a30; border-radius: 999px;
       color: #c9c9d1; pointer-events: none; }
+    #drop { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      background: rgba(10, 10, 12, 0.85); color: #c9c9d1; font-size: 18px; pointer-events: none; }
+    body.dropping #drop { display: flex; }
     #file { display: none; }
     video { display: none; }
   </style>
 </head>
 <body>
   <div id="bar">
-    <select id="renderer"></select>
-    <button id="open">open video…</button>
-    <input id="file" type="file" accept="video/*" />
+    <button id="open">open file…</button>
+    <div id="modes"></div>
+    <label>cols <input id="cols" type="range" min="160" max="1920" step="20" value="800" /><span id="colsv">800</span></label>
     <span id="stats">loading…</span>
   </div>
   <div id="grid"></div>
-  <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay></video>
+  <div id="drop">drop a video or image to play it</div>
+  <input id="file" type="file" accept="video/*,image/*" />
+  <video id="video" src="/demo1080.mp4" muted loop playsinline autoplay></video>
   <script type="module" src="/src/player.ts"></script>
 </body>
 </html>
