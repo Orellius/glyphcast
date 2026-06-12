@@ -6,7 +6,7 @@
 // NOT responsible for: relaying (server/relay.ts), viewing (view.ts).
 // Test strategy: E2E checksum convergence with view.ts via window.__gcc.
 
-import { encodeCells, type Mode } from './encode'
+import { encodeCells, sampleX, sampleY, type Mode } from './encode'
 import { measureCharRatio, rowsFor } from './grid'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
@@ -16,7 +16,7 @@ const q = new URLSearchParams(location.search)
 const cols = Number(q.get('cols') ?? 240)
 const wireMode: WireMode = q.get('wire') === 'mono' ? 'mono' : 'color'
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
-const mode: Mode = 'quadrant'
+const mode: Mode = q.get('mode') === 'sextant' ? 'sextant' : 'quadrant'
 
 const video = document.getElementById('video') as HTMLVideoElement
 video.src = q.get('src') ?? '/bbb60.mp4'
@@ -65,7 +65,7 @@ function castFrame(now: number) {
     state.glyph.fill(255)
     wantKey = false
   }
-  const img = sampler.sample(video, cols * 2, rows * 2)
+  const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
   encodeCells(img, cols, rows, mode, 0, fg, bg)
   const pkt = pack(state, fg, bg, wireMode)
   if (ws.readyState === WebSocket.OPEN) ws.send(pkt)
@@ -96,7 +96,9 @@ const tickWorker = new Worker(
   URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 33)'], { type: 'text/javascript' })),
 )
 tickWorker.onmessage = () => {
-  if (document.hidden) castFrame(performance.now())
+  // hidden: worker replaces frozen rVFC. wantKey: a paused video produces no
+  // rVFC ticks at all, so a pending keyframe must be pushed from here too.
+  if (document.hidden || wantKey) castFrame(performance.now())
 }
 
 // Chrome's background optimization pauses muted video-only playback in hidden

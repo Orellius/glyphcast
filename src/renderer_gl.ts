@@ -9,9 +9,9 @@
 // NOT responsible for: CPU encoding (encode.ts), control flow (main.ts).
 // Test strategy: live browser smoke via window.__gc bench + PSNR vs source.
 
-export const GLYPH_COUNT = 26
+export const GLYPH_COUNT = 90
 const GW = 32
-const GH = 64
+const GH = 60
 const RAMP = ' .:-=+*#%@'
 
 const VERT = `#version 300 es
@@ -88,6 +88,36 @@ void main() {
     return;
   }
 
+  if (uMode == 3) {
+    vec2 spitch = cuv * vec2(0.5, 0.3333333);
+    vec3 s0 = sharpTap((ci + vec2(0.25, 0.1666667)) * cuv, spitch);
+    vec3 s1 = sharpTap((ci + vec2(0.75, 0.1666667)) * cuv, spitch);
+    vec3 s2 = sharpTap((ci + vec2(0.25, 0.5)) * cuv, spitch);
+    vec3 s3 = sharpTap((ci + vec2(0.75, 0.5)) * cuv, spitch);
+    vec3 s4 = sharpTap((ci + vec2(0.25, 0.8333333)) * cuv, spitch);
+    vec3 s5 = sharpTap((ci + vec2(0.75, 0.8333333)) * cuv, spitch);
+    float m0 = dot(s0, LW); float m1 = dot(s1, LW); float m2 = dot(s2, LW);
+    float m3 = dot(s3, LW); float m4 = dot(s4, LW); float m5 = dot(s5, LW);
+    float savg = (m0 + m1 + m2 + m3 + m4 + m5) / 6.0;
+    bool o0 = m0 > savg; bool o1 = m1 > savg; bool o2 = m2 > savg;
+    bool o3 = m3 > savg; bool o4 = m4 > savg; bool o5 = m5 > savg;
+    vec3 fgS = vec3(0.0); float fn = 0.0;
+    vec3 bgS = vec3(0.0); float bn = 0.0;
+    if (o0) { fgS += s0; fn += 1.0; } else { bgS += s0; bn += 1.0; }
+    if (o1) { fgS += s1; fn += 1.0; } else { bgS += s1; bn += 1.0; }
+    if (o2) { fgS += s2; fn += 1.0; } else { bgS += s2; bn += 1.0; }
+    if (o3) { fgS += s3; fn += 1.0; } else { bgS += s3; bn += 1.0; }
+    if (o4) { fgS += s4; fn += 1.0; } else { bgS += s4; bn += 1.0; }
+    if (o5) { fgS += s5; fn += 1.0; } else { bgS += s5; bn += 1.0; }
+    vec3 sbg = bn > 0.0 ? bgS / bn : fgS / max(fn, 1.0);
+    vec3 sfg = fn > 0.0 ? fgS / fn : sbg;
+    int srow = int(min(f.y * 3.0, 2.0));
+    bool left = f.x < 0.5;
+    bool sOn = srow == 0 ? (left ? o0 : o1) : srow == 1 ? (left ? o2 : o3) : (left ? o4 : o5);
+    frag = vec4(quant(sOn ? sfg : sbg), 1.0);
+    return;
+  }
+
   vec2 pitch = cuv * 0.5;
   vec3 c00 = sharpTap((ci + vec2(0.25, 0.25)) * cuv, pitch);
   vec3 c10 = sharpTap((ci + vec2(0.75, 0.25)) * cuv, pitch);
@@ -125,6 +155,14 @@ function buildAtlas(): HTMLCanvasElement {
   x.textAlign = 'center'
   x.textBaseline = 'middle'
   for (let i = 0; i < RAMP.length; i++) x.fillText(RAMP[i], (16 + i) * GW + GW / 2, GH / 2)
+  // sextants 26-89 as exact rect sixths - no font dependency, seamless
+  const TH = GH / 3
+  for (let b = 0; b < 64; b++) {
+    const ox = (26 + b) * GW
+    for (let s = 0; s < 6; s++) {
+      if (b & (1 << s)) x.fillRect(ox + (s & 1) * (GW / 2), (s >> 1) * TH, GW / 2, TH)
+    }
+  }
   return c
 }
 
@@ -203,7 +241,7 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   let texRows = 0
   let vidW = 0
   let vidH = 0
-  const MODE_IDX = { quadrant: 0, halfblock: 1, ascii: 2 } as const
+  const MODE_IDX = { quadrant: 0, halfblock: 1, ascii: 2, sextant: 3 } as const
 
   return {
     resize(cssW: number, cssH: number) {

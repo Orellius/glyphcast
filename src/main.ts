@@ -6,7 +6,7 @@
 // NOT responsible for: encoding (encode.ts), rendering (render.ts/renderer_gl.ts).
 // Test strategy: live browser smoke via window.__gc asserts + PSNR vs source.
 
-import { encodeCells, encodeFrame, frameToPlainText, sharpen, type Mode } from './encode'
+import { encodeCells, encodeFrame, frameToPlainText, sampleX, sampleY, sharpen, type Mode } from './encode'
 import { measureCharRatio, rowsFor } from './grid'
 import { createRenderer } from './render'
 import { createRendererGL } from './renderer_gl'
@@ -61,8 +61,7 @@ let lastFrameAt = 0
 
 function frame() {
   const t0 = performance.now()
-  const sx = mode === 'quadrant' ? 2 : 1
-  const img = sampler.sample(video, cols * sx, rows * 2)
+  const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
   sharpen(img, sharpAmt)
   const f = encodeFrame(img, cols, rows, mode, qShift)
   const t1 = performance.now()
@@ -122,11 +121,32 @@ loop()
 video.requestVideoFrameCallback(onVideoFrame)
 
 const playpause = $<HTMLButtonElement>('playpause')
+let userPaused = false
 function togglePlay() {
+  userPaused = !video.paused
   if (video.paused) void video.play()
   else video.pause()
-  playpause.textContent = video.paused ? 'play' : 'pause'
 }
+video.addEventListener('play', () => (playpause.textContent = 'pause'))
+video.addEventListener('pause', () => (playpause.textContent = 'play'))
+
+// Brave (and strict Chrome profiles) block even muted autoplay; the autoplay
+// attribute then fails silently and the page sat on "loading…" forever.
+// Retry a few times, then surface the truth instead of a stuck label.
+let kickTries = 0
+const kick = setInterval(() => {
+  if (!video.paused || userPaused) {
+    clearInterval(kick)
+    return
+  }
+  if (video.readyState < 2) return
+  if (++kickTries > 5) {
+    clearInterval(kick)
+    statsEl.textContent = 'autoplay blocked — click the picture to play'
+    return
+  }
+  void video.play().catch(() => {})
+}, 400)
 playpause.addEventListener('click', togglePlay)
 stage.addEventListener('click', () => {
   if (window.getSelection()?.toString()) return
@@ -161,7 +181,7 @@ $<HTMLInputElement>('glow').addEventListener('input', (e) => {
 })
 $<HTMLButtonElement>('copy').addEventListener('click', () => {
   if (video.readyState < 2) return
-  const img = sampler.sample(video, cols * (mode === 'quadrant' ? 2 : 1), rows * 2)
+  const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
   void navigator.clipboard.writeText(frameToPlainText(img, cols, rows))
 })
 const file = $<HTMLInputElement>('file')
@@ -209,7 +229,7 @@ window.__gc = {
   },
   plainText: () => {
     if (video.readyState < 2) return ''
-    const img = sampler.sample(video, cols * (mode === 'quadrant' ? 2 : 1), rows * 2)
+    const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
     return frameToPlainText(img, cols, rows)
   },
   bench: (n: number) => {
@@ -236,7 +256,6 @@ window.__gc = {
     const t0 = video.currentTime
     const wrows = rowsFor(wcols, CHAR_RATIO, video.videoWidth, video.videoHeight)
     const n = wcols * wrows
-    const sx = wmode === 'quadrant' ? 2 : 1
     const wfg = new Uint8Array(n * 4)
     const wbg = new Uint8Array(n * 4)
     const sender = createWireState(wcols, wrows)
@@ -252,7 +271,7 @@ window.__gc = {
     let roundtripOk = true
     for (let f = 0; f < frames; f++) {
       await seek(1 + f / fps)
-      const img = sampler.sample(video, wcols * sx, wrows * 2)
+      const img = sampler.sample(video, wcols * sampleX(wmode), wrows * sampleY(wmode))
       encodeCells(img, wcols, wrows, wmode, 0, wfg, wbg)
       const pkt = pack(sender, wfg, wbg, wireMode)
       packets.push(pkt)
@@ -276,10 +295,9 @@ window.__gc = {
     }
   },
   benchCells: (n: number) => {
-    const sx = mode === 'quadrant' ? 2 : 1
     const t0 = performance.now()
     for (let i = 0; i < n; i++) {
-      const img = sampler.sample(video, cols * sx, rows * 2)
+      const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
       sharpen(img, sharpAmt)
       encodeCells(img, cols, rows, mode, qShift, fgBuf, bgBuf)
       glRenderer.render(fgBuf, bgBuf, cols, rows)

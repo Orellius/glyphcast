@@ -8,16 +8,32 @@
 // packets) lands here without touching DOM code.
 // Test strategy: deterministic - feed a known ImageData, assert run merging.
 
-export type Mode = 'quadrant' | 'halfblock' | 'ascii'
+export type Mode = 'quadrant' | 'sextant' | 'halfblock' | 'ascii'
+
+// subpixel sampling factors per mode: sample image is cols*sx wide, rows*sy tall
+export const sampleX = (m: Mode) => (m === 'ascii' || m === 'halfblock' ? 1 : 2)
+export const sampleY = (m: Mode) => (m === 'sextant' ? 3 : 2)
 export type Frame = { rows: string[]; spans: number; htmlBytes: number }
 
 const HB = '▀'
 const RAMP = ' .:-=+*#%@'
 const QUAD = [' ', '▘', '▝', '▀', '▖', '▌', '▞', '▛', '▗', '▚', '▐', '▜', '▄', '▙', '▟', '█']
 
-// wire glyph index -> char, in atlas order (quadrant 0-15, ascii ramp 16-25);
-// what a text receiver (terminal client) prints for each cell
-export const GLYPH_CHARS = [...QUAD, ...RAMP]
+// sextants: 2x3 subpixels per char, Unicode 13 Legacy Computing block. The
+// four bit patterns missing from U+1FB00-3B exist as older blocks chars.
+const SEXT: string[] = []
+for (let b = 0; b < 64; b++) {
+  if (b === 0) SEXT.push(' ')
+  else if (b === 21) SEXT.push('▌')
+  else if (b === 42) SEXT.push('▐')
+  else if (b === 63) SEXT.push('█')
+  else SEXT.push(String.fromCodePoint(0x1fb00 + b - 1 - (b > 21 ? 1 : 0) - (b > 42 ? 1 : 0)))
+}
+
+// wire glyph index -> char, in atlas order (quadrant 0-15, ascii ramp 16-25,
+// sextants 26-89); what a text receiver (terminal client) prints per cell
+export const GLYPH_CHARS = [...QUAD, ...RAMP, ...SEXT]
+export const SEXT_BASE = 26
 
 const HEX: string[] = []
 for (let i = 0; i < 256; i++) HEX.push(i.toString(16).padStart(2, '0'))
@@ -28,6 +44,7 @@ for (let l = 0; l < 256; l++) LUMA_CHAR.push(RAMP[((l * (RAMP.length - 1)) / 255
 
 export function encodeFrame(img: ImageData, cols: number, rows: number, mode: Mode, qShift: number): Frame {
   if (mode === 'quadrant') return encodeQuadrant(img, cols, rows, qShift)
+  if (mode === 'sextant') return encodeSextant(img, cols, rows, qShift)
   return mode === 'halfblock'
     ? encodeHalfblock(img, cols, rows, qShift)
     : encodeAscii(img, cols, rows, qShift)
@@ -98,6 +115,61 @@ function encodeQuadrant(img: ImageData, cols: number, rows: number, qShift: numb
       runFg = fg
       runBg = bg
       run = QUAD[bits]
+    }
+    if (run) {
+      html += spanFgBg(runFg, runBg, run)
+      spans++
+    }
+    out.push(html)
+    htmlBytes += html.length
+  }
+  return { rows: out, spans, htmlBytes }
+}
+
+function encodeSextant(img: ImageData, cols: number, rows: number, qShift: number): Frame {
+  const d = img.data
+  const W = img.width
+  const mask = (255 >> qShift) << qShift
+  const out: string[] = []
+  let spans = 0
+  let htmlBytes = 0
+  const idx = new Array<number>(6)
+  for (let y = 0; y < rows; y++) {
+    let html = ''
+    let runFg = -1
+    let runBg = -1
+    let run = ''
+    for (let x = 0; x < cols; x++) {
+      for (let s = 0; s < 6; s++) idx[s] = ((y * 3 + (s >> 1)) * W + x * 2 + (s & 1)) * 4
+      let avg = 0
+      const lum = new Array<number>(6)
+      for (let s = 0; s < 6; s++) {
+        const i = idx[s]
+        lum[s] = (d[i] * 54 + d[i + 1] * 183 + d[i + 2] * 19) >> 8
+        avg += lum[s]
+      }
+      avg = (avg / 6) | 0
+      let bits = 0
+      let fr = 0, fgc = 0, fb = 0, fn = 0
+      let br = 0, bgc = 0, bb = 0, bn = 0
+      for (let s = 0; s < 6; s++) {
+        const i = idx[s]
+        if (lum[s] > avg) { bits |= 1 << s; fr += d[i]; fgc += d[i + 1]; fb += d[i + 2]; fn++ }
+        else { br += d[i]; bgc += d[i + 1]; bb += d[i + 2]; bn++ }
+      }
+      const bg = (((br / bn) & mask) << 16) | (((bgc / bn) & mask) << 8) | ((bb / bn) & mask)
+      const fg = fn === 0 ? bg : (((fr / fn) & mask) << 16) | (((fgc / fn) & mask) << 8) | ((fb / fn) & mask)
+      if (fg === runFg && bg === runBg) {
+        run += SEXT[bits]
+        continue
+      }
+      if (run) {
+        html += spanFgBg(runFg, runBg, run)
+        spans++
+      }
+      runFg = fg
+      runBg = bg
+      run = SEXT[bits]
     }
     if (run) {
       html += spanFgBg(runFg, runBg, run)
@@ -242,6 +314,47 @@ export function encodeCells(
           fg[o + 2] = (fb / fn) & mask
         }
         fg[o + 3] = bits
+      }
+    }
+    return
+  }
+
+  if (mode === 'sextant') {
+    const idx = new Array<number>(6)
+    const lum = new Array<number>(6)
+    for (let y = 0; y < rows; y++) {
+      let o = y * cols * 4
+      for (let x = 0; x < cols; x++, o += 4) {
+        let avg = 0
+        for (let s = 0; s < 6; s++) {
+          const i = ((y * 3 + (s >> 1)) * W + x * 2 + (s & 1)) * 4
+          idx[s] = i
+          lum[s] = (d[i] * 54 + d[i + 1] * 183 + d[i + 2] * 19) >> 8
+          avg += lum[s]
+        }
+        avg = (avg / 6) | 0
+        let bits = 0
+        let fr = 0, fgc = 0, fb = 0, fn = 0
+        let br = 0, bgc = 0, bb = 0, bn = 0
+        for (let s = 0; s < 6; s++) {
+          const i = idx[s]
+          if (lum[s] > avg) { bits |= 1 << s; fr += d[i]; fgc += d[i + 1]; fb += d[i + 2]; fn++ }
+          else { br += d[i]; bgc += d[i + 1]; bb += d[i + 2]; bn++ }
+        }
+        bg[o] = (br / bn) & mask
+        bg[o + 1] = (bgc / bn) & mask
+        bg[o + 2] = (bb / bn) & mask
+        bg[o + 3] = 255
+        if (fn === 0) {
+          fg[o] = bg[o]
+          fg[o + 1] = bg[o + 1]
+          fg[o + 2] = bg[o + 2]
+        } else {
+          fg[o] = (fr / fn) & mask
+          fg[o + 1] = (fgc / fn) & mask
+          fg[o + 2] = (fb / fn) & mask
+        }
+        fg[o + 3] = 26 + bits
       }
     }
     return
