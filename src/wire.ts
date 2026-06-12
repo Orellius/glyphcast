@@ -128,7 +128,7 @@ export async function deflatedSize(frames: Uint8Array[]): Promise<number> {
   const cs = new CompressionStream('deflate-raw')
   const writer = cs.writable.getWriter()
   const done = new Response(cs.readable).arrayBuffer()
-  for (const f of frames) await writer.write(f)
+  for (const f of frames) await writer.write(f as Uint8Array<ArrayBuffer>)
   await writer.close()
   return (await done).byteLength
 }
