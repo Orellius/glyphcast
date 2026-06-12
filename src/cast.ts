@@ -10,6 +10,7 @@ import { encodeCells, sampleX, sampleY, type Mode } from './encode'
 import { measureCharRatio, rowsFor } from './grid'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
+import { createWcSource } from './wcsource'
 import { createWireState, pack, stateChecksum, type WireDepth, type WireMode, type WireState } from './wire'
 
 const q = new URLSearchParams(location.search)
@@ -20,9 +21,14 @@ const p3 = q.get('p3') === '1'
 const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
 const mq = q.get('mode')
 const mode: Mode = mq === 'sextant' ? 'sextant' : mq === 'octant' ? 'octant' : 'quadrant'
+// ?wc=1: WebCodecs source - fetch + VideoDecoder, no <video> element in the
+// pipeline, so no autoplay policy can gate the caster anywhere
+const wc = q.get('wc') === '1'
 
 const video = document.getElementById('video') as HTMLVideoElement
-if (q.get('src') === 'gradient') {
+if (wc) {
+  // video element stays empty; frames come from wcsource
+} else if (q.get('src') === 'gradient') {
   // banding lab source: a slow-drifting smooth gradient - the case that
   // exposes color quantization (skies, sunsets)
   const c = document.createElement('canvas')
@@ -67,8 +73,8 @@ ws.addEventListener('message', (e) => {
   if (e.data === 'key') wantKey = true
 })
 
-function layout() {
-  rows = rowsFor(cols, CHAR_RATIO, video.videoWidth || 16, video.videoHeight || 9)
+function layout(vw = video.videoWidth || 16, vh = video.videoHeight || 9) {
+  rows = rowsFor(cols, CHAR_RATIO, vw, vh)
   const n = cols * rows * 4
   fg = new Uint8Array(n)
   bg = new Uint8Array(n)
@@ -121,22 +127,28 @@ let lastT = -1
 function castFrame(now: number) {
   if (video.readyState < 2 || !state) return
   if (video.currentTime === lastT && !wantKey) return
+  if (pool.length && inFlight) return
+  lastT = video.currentTime
+  castImage(video, now)
+}
+
+// shared by the <video> path and the WebCodecs path
+function castImage(src: HTMLVideoElement | VideoFrame, now: number) {
+  if (!state) return
   if (pool.length) {
     if (inFlight) return
-    lastT = video.currentTime
     inFlight = true
     arrived = 0
     poolSeq++
     const seq = poolSeq
-    void createImageBitmap(video).then((bmp) => {
+    void createImageBitmap(src).then((bmp) => {
       // postMessage without transfer clones the bitmap per worker
       for (const w of pool) w.postMessage({ kind: 'frame', seq, bitmap: bmp })
       bmp.close()
     })
     return
   }
-  lastT = video.currentTime
-  const img = sampler.sample(video, cols * sampleX(mode), rows * sampleY(mode))
+  const img = sampler.sample(src, cols * sampleX(mode), rows * sampleY(mode))
   encodeCells(img, cols, rows, mode, 0, fg, bg)
   finishFrame(now)
 }
@@ -165,17 +177,42 @@ function finishFrame(now: number) {
   }
 }
 
+// WebCodecs source: pump on rAF when visible, worker tick when hidden
+let wcPump: (() => void) | null = null
+if (wc) {
+  void createWcSource(
+    q.get('src') ?? '/bbb60.mp4',
+    (frame) => castImage(frame, performance.now()),
+    (msg) => (statsEl.textContent = `wc error: ${msg}`),
+  )
+    .then((s) => {
+      const d = s.dims()
+      if (d) layout(d.w, d.h)
+      wcPump = s.pump
+    })
+    .catch((e: Error) => (statsEl.textContent = `wc error: ${e.message}`))
+}
+
 function onFrame(now: number) {
   if (!document.hidden) castFrame(now)
   video.requestVideoFrameCallback(onFrame)
 }
 
-// rVFC freezes in hidden tabs; a dedicated-worker timer doesn't. The video
+function rafLoop() {
+  requestAnimationFrame(rafLoop)
+  if (wc && wcPump && !document.hidden) wcPump()
+}
+
+// rVFC/rAF freeze in hidden tabs; a dedicated-worker timer doesn't. The video
 // keeps decoding while playing, so casting survives backgrounding.
 const tickWorker = new Worker(
   URL.createObjectURL(new Blob(['setInterval(() => postMessage(0), 33)'], { type: 'text/javascript' })),
 )
 tickWorker.onmessage = () => {
+  if (wc) {
+    if (wcPump && (document.hidden || wantKey)) wcPump()
+    return
+  }
   // hidden: worker replaces frozen rVFC. wantKey: a paused video produces no
   // rVFC ticks at all, so a pending keyframe must be pushed from here too.
   if (document.hidden || wantKey) castFrame(performance.now())
@@ -183,25 +220,29 @@ tickWorker.onmessage = () => {
 
 // Chrome's background optimization pauses muted video-only playback in hidden
 // tabs; re-playing from the pause event keeps the cast alive. userPaused
-// distinguishes a deliberate click-pause from the policy pause.
+// distinguishes a deliberate click-pause from the policy pause. None of this
+// machinery exists in wc mode - that's the point of it.
 let userPaused = false
-video.addEventListener('pause', () => {
-  if (!userPaused) void video.play()
-})
+if (!wc) {
+  video.addEventListener('pause', () => {
+    if (!userPaused) void video.play()
+  })
 
-// in a tab that loads hidden, the autoplay attribute never fires - retry
-// play() until decoding starts
-const kick = setInterval(() => {
-  if (userPaused) return
-  if (!video.paused) clearInterval(kick)
-  else if (video.readyState >= 2) void video.play()
-}, 500)
+  // in a tab that loads hidden, the autoplay attribute never fires - retry
+  // play() until decoding starts
+  const kick = setInterval(() => {
+    if (userPaused) return
+    if (!video.paused) clearInterval(kick)
+    else if (video.readyState >= 2) void video.play()
+  }, 500)
 
-video.addEventListener('loadedmetadata', layout)
-video.requestVideoFrameCallback(onFrame)
-canvas.addEventListener('click', () => {
-  userPaused = video.paused ? (void video.play(), false) : (video.pause(), true)
-})
+  video.addEventListener('loadedmetadata', () => layout())
+  video.requestVideoFrameCallback(onFrame)
+  canvas.addEventListener('click', () => {
+    userPaused = video.paused ? (void video.play(), false) : (video.pause(), true)
+  })
+}
+rafLoop()
 
 declare global {
   interface Window {
