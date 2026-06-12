@@ -20,6 +20,10 @@ const fx = {
   gap: Number(q.get('gap') ?? 0),
   glow: Number(q.get('glow') ?? 0),
 }
+// OLED emitter emulation (?oled=1): each glyph subpixel renders as an RGB
+// triad with black matrix - the microscope look; gain compensates matrix area
+const oled = q.get('oled') === '1'
+const oledGain = Number(q.get('oledgain') ?? 2.6)
 
 const canvas = document.getElementById('glcanvas') as HTMLCanvasElement
 const statsEl = document.getElementById('stats') as HTMLSpanElement
@@ -47,6 +51,7 @@ window.addEventListener('resize', () => {
 
 let state: WireState | null = null
 let wireMode: WireMode = 'color'
+let lastPage: boolean | null = null
 let fg = new Uint8Array(0)
 let bg = new Uint8Array(0)
 
@@ -81,6 +86,10 @@ ws.addEventListener('message', (e) => {
   }
   unpack(pkt, state)
   stateToCells(state, wireMode, fg, bg)
+  if (oled && octantPage !== lastPage) {
+    gl.setOled(true, 2, octantPage ? 4 : 2, oledGain)
+    lastPage = octantPage
+  }
   gl.render(fg, bg, cols, rows, octantPage)
 
   const now = performance.now()

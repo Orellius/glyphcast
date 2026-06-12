@@ -31,6 +31,16 @@ uniform float uPage;
 uniform float uScan;
 uniform float uGap;
 uniform float uGlow;
+uniform float uOled;
+uniform vec2 uOledTiles;
+uniform float uOledGain;
+
+float atlasA(float gi, vec2 p) {
+  return uPage > 0.5
+    ? texture(uAtlasOct, vec2((gi + p.x) / 256.0, p.y)).a
+    : texture(uAtlas, vec2((gi + p.x) / uGlyphs, p.y)).a;
+}
+
 in vec2 vUV;
 out vec4 frag;
 void main() {
@@ -40,9 +50,24 @@ void main() {
   vec4 bg = texelFetch(uBg, ci, 0);
   float gi = floor(fg.a * 255.0 + 0.5);
   vec2 inCell = fract(cell);
-  float a = uPage > 0.5
-    ? texture(uAtlasOct, vec2((gi + inCell.x) / 256.0, inCell.y)).a
-    : texture(uAtlas, vec2((gi + inCell.x) / uGlyphs, inCell.y)).a;
+
+  if (uOled > 0.5) {
+    // emitter emulation: one RGB triad per glyph subpixel, lit by the
+    // subpixel's color sampled at tile center; black matrix between
+    vec2 t = inCell * uOledTiles;
+    vec2 tc = (floor(t) + vec2(0.5)) / uOledTiles;
+    vec3 colC = mix(bg.rgb, fg.rgb, atlasA(gi, tc));
+    vec2 f2 = fract(t);
+    float band = floor(min(f2.x, 0.999) * 3.0);
+    vec2 bf = vec2(fract(f2.x * 3.0), f2.y);
+    vec2 m = smoothstep(vec2(0.10), vec2(0.30), bf) * (vec2(1.0) - smoothstep(vec2(0.70), vec2(0.90), bf));
+    float v = band < 0.5 ? colC.r : band < 1.5 ? colC.g : colC.b;
+    vec3 e = band < 0.5 ? vec3(1.0, 0.13, 0.0) : band < 1.5 ? vec3(0.1, 1.0, 0.15) : vec3(0.05, 0.25, 1.0);
+    frag = vec4(min(e * (v * uOledGain) * (m.x * m.y), vec3(1.0)), 1.0);
+    return;
+  }
+
+  float a = atlasA(gi, inCell);
   vec3 col = mix(bg.rgb, fg.rgb, a);
   // phosphor glow: the cell's lit color bleeds into its unlit area
   col += fg.rgb * (uGlow * 0.45 * (1.0 - a));
@@ -289,6 +314,9 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
   const uScan = gl.getUniformLocation(prog, 'uScan')
   const uGap = gl.getUniformLocation(prog, 'uGap')
   const uGlow = gl.getUniformLocation(prog, 'uGlow')
+  const uOled = gl.getUniformLocation(prog, 'uOled')
+  const uOledTiles = gl.getUniformLocation(prog, 'uOledTiles')
+  const uOledGain = gl.getUniformLocation(prog, 'uOledGain')
 
   const progD = gl.createProgram()!
   gl.attachShader(progD, compile(gl, gl.VERTEX_SHADER, VERT))
@@ -323,6 +351,12 @@ export function createRendererGL(canvas: HTMLCanvasElement) {
       gl.uniform1f(uScan, scan)
       gl.uniform1f(uGap, gap)
       gl.uniform1f(uGlow, glow)
+    },
+    setOled(on: boolean, tilesX: number, tilesY: number, gain: number) {
+      gl.useProgram(prog)
+      gl.uniform1f(uOled, on ? 1 : 0)
+      gl.uniform2f(uOledTiles, tilesX, tilesY)
+      gl.uniform1f(uOledGain, gain)
     },
     resize(cssW: number, cssH: number) {
       const dpr = window.devicePixelRatio || 1
