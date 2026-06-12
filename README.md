@@ -1,16 +1,17 @@
 # glyphcast
 
 Video as text. A typography-only video codec + streaming stack: every frame is a
-grid of monospace glyphs (Unicode quadrant blocks / halfblocks / ascii ramp) with
-per-cell colors. Renders in a browser at video fps, streams over WebSocket in a
+grid of monospace glyphs (Unicode sextant / quadrant blocks / halfblocks / ascii
+ramp) with per-cell colors. Renders in a browser at video fps, streams over WebSocket in a
 byte-aligned wire format dumb enough for a terminal - or an MCU - to decode.
 
 ## Pieces
 
 - `index.html` - the player/lab. Two engines: **gpu** (WebGL2, the cell encode runs
   in the fragment shader, zero CPU per frame, one draw call) and **dom** (CPU encode
-  to runs of `<span>`, dirty-row innerHTML). Modes: quadrant (2x2 subpixels/char),
-  halfblock, ascii. Sliders for cols (80-640), quantization, unsharp, glow.
+  to runs of `<span>`, dirty-row innerHTML). Modes: sextant (2x3 subpixels/char,
+  the sharpest), quadrant (2x2), halfblock, ascii. Sliders for cols (80-640),
+  quantization, unsharp, glow.
 - `src/wire.ts` - wire format v1: cell = glyph index (+ fg/bg RGB565 in color mode),
   frame = skip/emit runs vs previous frame. Byte-aligned, no entropy coding;
   transport deflate (WS permessage-deflate) does that layer.
