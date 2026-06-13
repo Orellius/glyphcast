@@ -50,7 +50,7 @@ function prompt(text: string, variant: string, options: string[]): string {
   )
 }
 
-type ChatResp = { message?: { content?: string }; prompt_eval_count?: number; error?: string }
+type ChatResp = { message?: { content?: string; thinking?: string }; prompt_eval_count?: number; error?: string }
 async function chat(model: string, content: string, images?: string[]): Promise<{ text: string; inTok: number }> {
   const res = await fetch(`${OLLAMA}/api/chat`, {
     method: 'POST',
@@ -59,13 +59,16 @@ async function chat(model: string, content: string, images?: string[]): Promise<
     body: JSON.stringify({
       model,
       stream: false,
-      options: { temperature: 0, num_ctx: 8192 },
+      options: { temperature: 0, num_ctx: 8192, num_predict: 768 },
       messages: [{ role: 'user', content, ...(images ? { images } : {}) }],
     }),
   })
   const j = (await res.json()) as ChatResp
   if (j.error) throw new Error(`${model}: ${j.error}`)
-  return { text: j.message?.content ?? '', inTok: j.prompt_eval_count ?? 0 }
+  // thinking models (gemma4:31b) may finish inside `thinking` with empty
+  // content - the ANSWER line is still parseable there
+  const text = [j.message?.content ?? '', j.message?.thinking ?? ''].join('\n')
+  return { text, inTok: j.prompt_eval_count ?? 0 }
 }
 
 type Row = {

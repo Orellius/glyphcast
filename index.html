@@ -240,7 +240,8 @@
         each one a printable Unicode glyph plus two colors — re-encoded from the
         source every frame, entirely on your GPU.</p>
       <div id="actions">
-        <button id="copyframe" class="primary">copy this frame as text</button>
+        <a class="btn primary" href="/view?ch=bbb">⏺ glyphTV — tune in live</a>
+        <button id="copyframe">copy this frame as text</button>
         <a class="btn" href="/lab">open the lab</a>
       </div>
     </div>
@@ -271,7 +272,8 @@
 
     <section>
       <h2 class="display">a terminal is a full receiver</h2>
-      <pre class="term"><span class="ps">$</span> GC_CH=verify GC_FRAMES=120 bun clients/term.ts
+      <pre class="term"><span class="ps">$</span> GC_CH=bbb bun clients/term.ts wss://relay.glyphcast.tv   <span style="color:#4c4c55"># the live station, right now</span>
+<span class="ps">$</span> GC_CH=verify GC_FRAMES=120 bun clients/term.ts
 <span class="out">{"frames":120,"checksum":2291410159,"cols":240,"rows":81}</span></pre>
       <p>The same stream the browser draws, rendered with ANSI truecolor escapes —
         real U+1CD00 octant glyphs in your terminal. The checksum matches the
@@ -301,7 +303,8 @@
     <section>
       <h2 class="display">play with it</h2>
       <div id="actions">
-        <a class="btn primary" href="/lab">the lab — engines, modes, benches</a>
+        <a class="btn primary" href="/view?ch=bbb">glyphTV — the live station</a>
+        <a class="btn" href="/lab">the lab — engines, modes, benches</a>
         <a class="btn" href="/player">the player — drop a video on it</a>
         <a class="btn" href="https://github.com/Orellius/glyphcast">github</a>
       </div>
