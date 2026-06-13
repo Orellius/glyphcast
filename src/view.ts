@@ -14,7 +14,10 @@ import { createWireState, stateChecksum, stateToCells, unpack, type WireDepth, t
 
 const q = new URLSearchParams(location.search)
 const wsUrl = q.get('ws') ?? (['localhost', '127.0.0.1'].includes(location.hostname) ? 'ws://localhost:8788' : 'wss://relay.glyphcast.tv')
-const ch = q.get('ch') ?? 'main'
+// channel ids are a constrained token: sanitise at the boundary so ch is safe
+// to interpolate into the status strip and the relay query
+const cleanCh = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 32) || 'main'
+let ch = cleanCh(q.get('ch') ?? 'main')
 // all display FX opt-in: scan/gap read as black grid lines, glow lifts
 // blacks (washed-out look). Default = the pure picture.
 const fx = {
@@ -25,7 +28,8 @@ const fx = {
 // OLED emitter emulation (?oled=1): each glyph subpixel renders as an RGB
 // triad with black matrix - the microscope look; gain compensates matrix area
 const oled = q.get('oled') === '1'
-const oledGain = Number(q.get('oledgain') ?? 2.6)
+let oledGain = Number(q.get('oledgain') ?? 2.6)
+let oledOn = oled
 
 const canvas = document.getElementById('glcanvas') as HTMLCanvasElement
 const statsEl = document.getElementById('stats') as HTMLSpanElement
@@ -267,70 +271,99 @@ unmuteBtn.addEventListener('click', () => {
   }
 })
 
-const ws = new WebSocket(`${wsUrl}/?role=view&ch=${encodeURIComponent(ch)}`)
-ws.binaryType = 'arraybuffer'
-ws.addEventListener('message', (e) => {
-  if (typeof e.data === 'string') return
-  const pkt = new Uint8Array(e.data as ArrayBuffer)
-  if (pkt[0] & 0x80) {
-    if (pkt[0] === 0x81) {
-      pendingCfg = JSON.parse(new TextDecoder().decode(pkt.subarray(1))) as AudioCfg
-      stats.audioCfg = true
-      unmuteBtn.style.display = 'block'
-      setupAudioDecoder()
-    } else if (pkt[0] === 0x80) {
-      stats.audioPkts++
-      if (audioDec && audioDec.state === 'configured') {
-        const ts = new DataView(pkt.buffer, pkt.byteOffset).getFloat64(1, true)
-        audioDec.decode(new EncodedAudioChunk({ type: 'key', timestamp: ts, data: pkt.subarray(9) }))
-      }
-    }
-    return
-  }
-  wireMode = pkt[0] & 1 ? 'color' : 'mono'
-  const octantPage = (pkt[0] & 2) !== 0
-  const depth: WireDepth = pkt[0] & 4 ? '888' : '565'
-  const cols = pkt[1] | (pkt[2] << 8)
-  const rows = pkt[3] | (pkt[4] << 8)
-  if (!state || state.cols !== cols || state.rows !== rows) {
-    state = createWireState(cols, rows)
-    const n = cols * rows * 4
-    fg = new Uint8Array(n)
-    bg = new Uint8Array(n)
-    stats.cells = cols * rows
-    layout(cols, rows)
-  }
-  winTouched += unpack(pkt, state)
-  lastPageState = octantPage
-  stateToCells(state, wireMode, fg, bg, depth)
-  if (oled && octantPage !== lastPage) {
-    gl.setOled(true, 2, octantPage ? 4 : 2, oledGain)
-    lastPage = octantPage
-  }
-  gl.render(fg, bg, cols, rows, octantPage)
+// ---------- TV chrome: now-playing OSD, no-signal, power-on ----------
+const osdEl = document.getElementById('osd') as HTMLDivElement
+const nosignalEl = document.getElementById('nosignal') as HTMLDivElement
+const wrapEl = document.getElementById('wrap') as HTMLDivElement
+function showOsd() { osdEl.classList.add('show'); poke() }
+function powerOn() { wrapEl.classList.add('powering'); setTimeout(() => wrapEl.classList.remove('powering'), 650) }
+function showNoSignal() { nosignalEl.classList.add('show') }
+function hideNoSignal() { nosignalEl.classList.remove('show') }
 
-  const now = performance.now()
-  stats.frames++
-  stats.recvBytes += pkt.length
-  winBytes += pkt.length
-  if (lastAt) stats.fps = stats.fps * 0.9 + (1000 / (now - lastAt)) * 0.1
-  lastAt = now
-  if (now - winAt > 500) {
-    stats.kbps = Math.round((winBytes * 8) / (now - winAt))
-    stats.glyphsPerSec = Math.round((winTouched * 1000) / (now - winAt))
-    winBytes = 0
-    winTouched = 0
-    winAt = now
-    statsEl.textContent =
-      `glyphTV · ch ${ch} · ${cols}×${rows} ${wireMode} · ${stats.fps.toFixed(0)} fps · ` +
-      `${(stats.glyphsPerSec / 1000).toFixed(0)}k letters retyped/s · ${stats.kbps} kbps raw · ` +
-      `${stats.frames} frames · i = inspect · t = save frame as .txt`
-  }
-})
-ws.addEventListener('close', () => {
-  statsEl.textContent = `glyphTV · ch ${ch} · signal lost`
-  document.body.classList.remove('idle')
-})
+let ws: WebSocket
+let gotFrame = false
+let signalTimer = 0
+
+function connect() {
+  gotFrame = false
+  clearTimeout(signalTimer)
+  signalTimer = window.setTimeout(() => { if (!gotFrame) showNoSignal() }, 4000)
+  ws = new WebSocket(`${wsUrl}/?role=view&ch=${encodeURIComponent(ch)}`)
+  ws.binaryType = 'arraybuffer'
+  ws.addEventListener('message', (e) => {
+    if (typeof e.data === 'string') return
+    const pkt = new Uint8Array(e.data as ArrayBuffer)
+    if (pkt[0] & 0x80) {
+      if (pkt[0] === 0x81) {
+        pendingCfg = JSON.parse(new TextDecoder().decode(pkt.subarray(1))) as AudioCfg
+        stats.audioCfg = true
+        unmuteBtn.style.display = 'block'
+        setupAudioDecoder()
+      } else if (pkt[0] === 0x80) {
+        stats.audioPkts++
+        if (audioDec && audioDec.state === 'configured') {
+          const ts = new DataView(pkt.buffer, pkt.byteOffset).getFloat64(1, true)
+          audioDec.decode(new EncodedAudioChunk({ type: 'key', timestamp: ts, data: pkt.subarray(9) }))
+        }
+      }
+      return
+    }
+    wireMode = pkt[0] & 1 ? 'color' : 'mono'
+    const octantPage = (pkt[0] & 2) !== 0
+    const depth: WireDepth = pkt[0] & 4 ? '888' : '565'
+    const cols = pkt[1] | (pkt[2] << 8)
+    const rows = pkt[3] | (pkt[4] << 8)
+    if (!state || state.cols !== cols || state.rows !== rows) {
+      state = createWireState(cols, rows)
+      const n = cols * rows * 4
+      fg = new Uint8Array(n)
+      bg = new Uint8Array(n)
+      stats.cells = cols * rows
+      layout(cols, rows)
+    }
+    winTouched += unpack(pkt, state)
+    lastPageState = octantPage
+    stateToCells(state, wireMode, fg, bg, depth)
+    if (oledOn && octantPage !== lastPage) {
+      gl.setOled(true, 2, octantPage ? 4 : 2, oledGain)
+      lastPage = octantPage
+    }
+    gl.render(fg, bg, cols, rows, octantPage)
+    if (!gotFrame) {
+      gotFrame = true
+      hideNoSignal()
+      powerOn()
+      showOsd()
+    }
+
+    const now = performance.now()
+    stats.frames++
+    stats.recvBytes += pkt.length
+    winBytes += pkt.length
+    if (lastAt) stats.fps = stats.fps * 0.9 + (1000 / (now - lastAt)) * 0.1
+    lastAt = now
+    if (now - winAt > 500) {
+      stats.kbps = Math.round((winBytes * 8) / (now - winAt))
+      stats.glyphsPerSec = Math.round((winTouched * 1000) / (now - winAt))
+      winBytes = 0
+      winTouched = 0
+      winAt = now
+      statsEl.innerHTML =
+        `<span class="seg live"><b>${ch}</b></span>` +
+        `<span class="seg">${cols}×${rows} <b>${wireMode}</b></span>` +
+        `<span class="seg"><b>${stats.fps.toFixed(0)}</b> fps</span>` +
+        `<span class="seg"><b>${(stats.glyphsPerSec / 1000).toFixed(0)}k</b> glyphs/s</span>` +
+        `<span class="seg"><b>${stats.kbps}</b> kbps</span>` +
+        `<span class="spacer"></span>` +
+        `<span class="seg">${stats.frames} frames · i inspect · t save</span>`
+    }
+  })
+  ws.addEventListener('close', () => {
+    document.body.classList.remove('idle')
+    if (gotFrame) showNoSignal()
+  })
+}
+connect()
 
 declare global {
   interface Window {
@@ -346,3 +379,124 @@ window.__gcv = {
   grid: () => (state ? { cols: state.cols, rows: state.rows, wireMode } : null),
   checksum: () => (state ? stateChecksum(state, wireMode) : -1),
 }
+
+// ---------- the remote: on-screen settings panel ----------
+const panel = document.getElementById('panel') as HTMLElement
+const num = (id: string) => Number((document.getElementById(id) as HTMLInputElement).value)
+const setInput = (id: string, val: number) => ((document.getElementById(id) as HTMLInputElement).value = String(val))
+function togglePanel(open?: boolean) {
+  panel.classList.toggle('open', open)
+  poke()
+}
+document.getElementById('gear')!.addEventListener('click', () => togglePanel())
+document.getElementById('panelClose')!.addEventListener('click', () => togglePanel(false))
+document.getElementById('fs')!.addEventListener('click', () => {
+  if (document.fullscreenElement) void document.exitFullscreen()
+  else void document.documentElement.requestFullscreen()
+})
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'm') togglePanel()
+})
+
+// slider positions come from any URL knobs; the uniforms were already applied above
+setInput('fSat', Number(q.get('sat') ?? 1))
+setInput('fCon', Number(q.get('con') ?? 1))
+setInput('fBri', Number(q.get('bri') ?? 1))
+setInput('fScan', fx.scan)
+setInput('fGap', fx.gap)
+setInput('fGlow', fx.glow)
+setInput('fOgain', oledGain)
+
+function bindRange(id: string, vid: string, fmt: (n: number) => string, apply: () => void) {
+  const r = document.getElementById(id) as HTMLInputElement
+  const v = document.getElementById(vid) as HTMLSpanElement
+  const sync = () => (v.textContent = fmt(num(id)))
+  r.addEventListener('input', () => {
+    apply()
+    sync()
+    rerender()
+  })
+  sync()
+}
+const applyPic = () => gl.setPicture(num('fSat'), num('fCon'), num('fBri'))
+const applyFx = () => gl.setFx(num('fScan'), num('fGap'), num('fGlow'))
+bindRange('fSat', 'vSat', (n) => n.toFixed(2), applyPic)
+bindRange('fCon', 'vCon', (n) => n.toFixed(2), applyPic)
+bindRange('fBri', 'vBri', (n) => n.toFixed(2), applyPic)
+bindRange('fScan', 'vScan', (n) => n.toFixed(2), applyFx)
+bindRange('fGap', 'vGap', (n) => n.toFixed(2), applyFx)
+bindRange('fGlow', 'vGlow', (n) => n.toFixed(2), applyFx)
+
+// OLED emitter toggle + gain
+const oledSw = document.getElementById('fOled') as HTMLButtonElement
+const syncOledSw = () => {
+  oledSw.classList.toggle('on', oledOn)
+  oledSw.setAttribute('aria-checked', String(oledOn))
+}
+oledSw.addEventListener('click', () => {
+  oledOn = !oledOn
+  gl.setOled(oledOn, 2, lastPageState ? 4 : 2, oledGain)
+  lastPage = oledOn ? lastPageState : null
+  syncOledSw()
+  rerender()
+})
+bindRange('fOgain', 'vOgain', (n) => n.toFixed(1), () => {
+  oledGain = num('fOgain')
+  if (oledOn) gl.setOled(true, 2, lastPageState ? 4 : 2, oledGain)
+})
+syncOledSw()
+
+document.getElementById('resetView')!.addEventListener('click', () => {
+  zoom = 1
+  cx = 0.5
+  cy = 0.5
+  const reset = (id: string, val: number) => {
+    setInput(id, val)
+    ;(document.getElementById(id) as HTMLInputElement).dispatchEvent(new Event('input'))
+  }
+  reset('fSat', 1)
+  reset('fCon', 1)
+  reset('fBri', 1)
+  reset('fScan', 0)
+  reset('fGap', 0)
+  reset('fGlow', 0)
+  if (oledOn) {
+    oledOn = false
+    gl.setOled(false, 2, 2, oledGain)
+    lastPage = null
+    syncOledSw()
+  }
+  rerender()
+})
+
+// channel switcher
+const chanInput = document.getElementById('chanInput') as HTMLInputElement
+chanInput.value = ch
+;(document.getElementById('osdCh') as HTMLElement).textContent = ch
+;(document.getElementById('nsCh') as HTMLElement).textContent = ch
+function tune() {
+  const c = cleanCh(chanInput.value)
+  chanInput.value = c
+  if (c === ch && gotFrame) {
+    togglePanel(false)
+    return
+  }
+  ch = c
+  ;(document.getElementById('osdCh') as HTMLElement).textContent = c
+  ;(document.getElementById('nsCh') as HTMLElement).textContent = c
+  try { ws.close() } catch { /* already closing */ }
+  state = null
+  hideNoSignal()
+  connect()
+  showOsd()
+  togglePanel(false)
+}
+document.getElementById('chanGo')!.addEventListener('click', tune)
+chanInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') tune()
+})
+document.getElementById('nsRetry')!.addEventListener('click', () => {
+  try { ws.close() } catch { /* already closing */ }
+  hideNoSignal()
+  connect()
+})

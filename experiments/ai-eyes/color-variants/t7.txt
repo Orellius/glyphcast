@@ -1,0 +1,28 @@
+SHAPE LAYER (Unicode quadrant glyphs, 24x12, filled quadrants = foreground):
+▌▖▚▐▐▄▄▄▄▄▄▄▄▄▙▟▄▄▄▄▄▄▄▄
+▞▌▐▐▐▄▄▄▗▄▟▙▄▄▄▄▄▄▄▄▄▄▄▄
+▌▝▄▐▐▄▄▄▞▀▀▌▚▄▄▄▄▄▄▄▄▄▗▄
+▝▌▐▝▝▜▖▀▄▄▀▛▀▀▀▀▐▀▙▄▖▗▄▄
+▘▞▌▐▙▀▀▌▐▛▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+▌▀▞▗▛▀▝▘▟▘▛▀▀▚▄▟▀▜▛▀▘▀▀▀
+▘▌▀▐▌▐▌▛▀▀▀▀▀▀▀▘▄▌▌▚▀▀▀▀
+▌▀▟▐▌▞▐▘▄▀▐▄▄▄▄▄▄▄▄▄▄▄▄▄
+▛▐▐▐▄▌▐▛▜▛▐▄▄▄▚▄▄▄▄▌▗▖▗▖
+▌▄▐▝▜▄▞▙▙▄▐▜▞▜▄▖▛▙▄▐▛▚▟▌
+▛▝▀▟▝▜▙▐▐▌▘▖▝▀▀▚▐▄▄▄▄▄▄▄
+▌▐▄▌▗▐▌▀▝▘▀▝▄▛▐▐▗▞▀▀▘▝▀▀
+
+COLOR LAYER (dominant color of each cell, same 24x12 grid)
+K=near-black w=grey W=white R=red G=green Y=yellow/tan B=blue C=cyan M=magenta:
+wwwwWCCCCWWWWWWWWWWWWWWW
+wwwwWWWWWWWWWWWWWWWWWWWW
+wwwwWWWWWWWWWWWWWWWWWWWW
+wwwwWWWWWWWWWWWWWWWWWWWW
+wwwwYWWWWWCCCCCCCCWWWWWW
+wwwwwwwCCCCCCCCCCCwCCCCC
+wwwwYRYYYYYYYYwwYYGwwGGG
+wwwwwKGwwRGGGGGGGGGGGGGG
+wwwwYwwwRwYGYYGYYYYYYYYY
+wwwMwGwwwwYGYYYYGGGYYYYG
+wwwKwGGGGYYGGYYYYYYYYYYY
+wwwwwwYGGGGGGGGYYYYYYYYY

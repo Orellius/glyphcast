@@ -1,0 +1,1202 @@
+[
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 307,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 704,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 956,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 2,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 352,
+  "seen": "A large grey rabbit is standing in a grassy meadow."
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 283,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 671,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 983,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 3231,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 7,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 352,
+  "seen": "A brown creature with purple wings leaps through the air over a green meadow."
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 365,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 842,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 1000,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 3370,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 12,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 356,
+  "seen": "Two squirrels and a small grey animal with an apple are standing in a grassy area next to a large tree."
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 320,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 725,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 971,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 17,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 351,
+  "seen": "A large grey rabbit stands in a grassy field surrounded by scattered fruit and pinecones."
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 376,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 859,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 1049,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 3316,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 22,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 353,
+  "seen": "A grey rabbit standing beside a large tree trunk."
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 364,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 816,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 948,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "D",
+  "inTok": 3101,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 0,
+  "seen": ""
+ },
+ {
+  "model": "gemma4:31b",
+  "t": 27,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 351,
+  "seen": "A grey rabbit seen from behind standing next to a tree trunk in a grassy field."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "ascii-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 892,
+  "seen": "A large, bright shape resembling a rabbit in a field of varying brightness levels"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "ascii-80",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1399,
+  "seen": "A large, bright shape resembling a rabbit in a field of varying brightness levels."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "quadrant-40",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 1828,
+  "seen": "A large grey rabbit standing in a grassy meadow"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "quadrant-80",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 4907,
+  "seen": "A large grey rabbit standing in a grassy meadow"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "halfblock-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1809,
+  "seen": "A solid block of dark pixels forming a rectangular shape, resembling a large animal in an open area."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "halfblock-80",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 5022,
+  "seen": "A solid grey rectangle filling the entire frame, resembling a large grey shape in an open area."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 2,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 1660,
+  "seen": "A large grey rabbit standing in a grassy meadow"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 881,
+  "seen": "A large, vaguely rabbit-shaped form with bright spots (eyes/ears) against a darker background."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 1402,
+  "seen": "A large, bright shape resembling a rabbit in the center of a textured background."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "D",
+  "expected": "B",
+  "inTok": 1819,
+  "seen": "A large grey rabbit standing in the grass"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "D",
+  "expected": "B",
+  "inTok": 4962,
+  "seen": "A large grey rabbit standing in the grass"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 1807,
+  "seen": "A solid black rectangle, likely representing a dark or shadowed area in the image."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 5020,
+  "seen": "A solid grey rectangle filling the entire frame, resembling a flat, featureless shape."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 7,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 1658,
+  "seen": "A squirrel leaping through the air over a meadow"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 937,
+  "seen": "A small animal (likely a rabbit) in the grass with some bright spots that could be an apple."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 1493,
+  "seen": "A small animal (likely a rabbit) in the grass near some foliage"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "quadrant-40",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 1805,
+  "seen": "Two squirrels facing each other, one appears to be holding or interacting with a butterfly-like shape."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "quadrant-80",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 4863,
+  "seen": "Two squirrels close together, one appears to be holding or interacting with a butterfly-like shape."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 1811,
+  "seen": "A solid block of dark pixels (no discernible features)"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 5024,
+  "seen": "A solid block of dark pixels (no discernible features)"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 12,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1662,
+  "seen": "Two squirrels in the grass, one holding a purple butterfly"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "ascii-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 899,
+  "seen": "A grey rabbit in an open field with scattered bright spots resembling fruit"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "ascii-80",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1427,
+  "seen": "A grey rabbit in an open field with scattered bright spots resembling fruit"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "quadrant-40",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 1812,
+  "seen": "A grey rabbit in an open field with scattered shapes resembling fruit or berries on the ground"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "quadrant-80",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 4896,
+  "seen": "A grey rabbit sitting in a grassy area with some round objects (possibly fruit) on the ground."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 1807,
+  "seen": "A solid grey rectangle, likely representing a grey rabbit asleep under a tree"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 5020,
+  "seen": "A solid grey rectangle filling the entire frame, resembling a uniformly colored object or background."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 17,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 1658,
+  "seen": "A grey rabbit standing in a meadow with fruit on the ground"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "ascii-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 948,
+  "seen": "A grey rabbit standing next to a vertical, textured structure resembling a tree trunk"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "ascii-80",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1541,
+  "seen": "A grey rabbit standing next to a large, textured vertical shape resembling a tree trunk."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "quadrant-40",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 1819,
+  "seen": "A grey rabbit standing next to a textured, vertical shape resembling a large tree trunk"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "quadrant-80",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 4937,
+  "seen": "A grey rabbit standing next to a textured, tree-like background"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "halfblock-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1807,
+  "seen": "A solid grey rectangle, likely representing a grey rabbit standing next to a large vertical structure (tree trunk)."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "C",
+  "expected": "D",
+  "inTok": 5020,
+  "seen": "A solid grey rectangle filling the entire frame, resembling a flat, featureless shape."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 22,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 1658,
+  "seen": "A grey rabbit standing beside a large tree trunk"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "ascii-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 941,
+  "seen": "A grey rabbit viewed from behind, positioned near a textured vertical element resembling a tree trunk."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "ascii-80",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1522,
+  "seen": "A grey rabbit viewed from behind, positioned near a textured vertical element resembling a tree trunk."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "quadrant-40",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 1824,
+  "seen": "A grey rabbit from behind near a tree trunk"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "quadrant-80",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 4972,
+  "seen": "A grey rabbit from behind near a tree trunk"
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "halfblock-40",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 1805,
+  "seen": "A solid black rectangle, likely representing a dark or shadowed area (possibly the back of an animal or object)."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "halfblock-80",
+  "correct": true,
+  "picked": "D",
+  "expected": "D",
+  "inTok": 5018,
+  "seen": "A solid grey rectangle, likely representing a rabbit's backside near a vertical structure (tree trunk)."
+ },
+ {
+  "model": "devstral-small-2:latest",
+  "t": 27,
+  "variant": "vision-png",
+  "correct": true,
+  "picked": "C",
+  "expected": "C",
+  "inTok": 1656,
+  "seen": "A grey rabbit from behind near a tree trunk"
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 2,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 307,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 2,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 704,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 2,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 956,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 2,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 3100,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 2,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 711,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 2,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 2324,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 7,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 283,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 7,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 671,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 7,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 983,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 7,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 3231,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 7,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 711,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 7,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 2324,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 12,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 365,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 12,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 842,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 12,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 1000,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 12,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 3370,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 12,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 715,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 12,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 2328,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 17,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 320,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 17,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "C",
+  "inTok": 725,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 17,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 971,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 17,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 3078,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 17,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 710,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 17,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 2323,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 22,
+  "variant": "ascii-40",
+  "correct": true,
+  "picked": "B",
+  "expected": "B",
+  "inTok": 376,
+  "seen": "An ASCII art illustration showing a rabbit on the left side of a large tree."
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 22,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 859,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 22,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 1049,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 22,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 3316,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 22,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 712,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 22,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 2325,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 27,
+  "variant": "ascii-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 364,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 27,
+  "variant": "ascii-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 816,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 27,
+  "variant": "quadrant-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 948,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 27,
+  "variant": "quadrant-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 3101,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 27,
+  "variant": "halfblock-40",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 710,
+  "seen": ""
+ },
+ {
+  "model": "gemma4-research:12b-bf16",
+  "t": 27,
+  "variant": "halfblock-80",
+  "correct": false,
+  "picked": "?",
+  "expected": "B",
+  "inTok": 2323,
+  "seen": ""
+ }
+]

@@ -4,319 +4,219 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>glyphcast — video as text</title>
-  <meta name="description" content="A typography-only video codec: every frame is a grid of Unicode glyphs with per-cell colors. The wire never carries pixels." />
+  <meta name="description" content="A typography-only video codec: every frame is a grid of Unicode glyphs. The wire never carries pixels — and an AI can read it." />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
-    @font-face {
-      font-family: 'Archivo Black';
-      src: url('/fonts/archivo-black.woff2') format('woff2');
-      font-weight: 400;
-      font-display: swap;
+    :root {
+      color-scheme: dark;
+      --l0: #08090A; --l1: #0F1011; --l2: #161719; --l3: #1F2024; --l4: #262830;
+      --text-1: #E9ECF1; --text-2: #9BA1A6; --text-3: #6E7479;
+      --accent: #3DD68C; --accent-text: #6EE6A6;
+      --border-subtle: #1F2024; --border-default: #262830; --border-strong: #3A3D44;
+      --r-btn: 6px; --r-card: 10px; --r-modal: 14px; --r-chip: 6px;
+      --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+      --sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
     }
-    :root { color-scheme: dark; }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: #0a0a0c;
-      color: #8a8a93;
-      font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    .display {
-      font-family: 'Archivo Black', 'Arial Black', sans-serif;
-      font-weight: 400;
-      text-transform: uppercase;
-      letter-spacing: 0.01em;
-      color: #e7e7ec;
-    }
-    #bg {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      z-index: -1;
-    }
-    #hero-canvas {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-    }
-    #hero {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      padding: 24px;
-    }
-    #panel {
-      background: rgba(10, 10, 12, 0.66);
-      backdrop-filter: blur(3px);
-      border: 1px solid #2a2a30;
-      border-radius: 10px;
-      padding: 30px 34px;
-      max-width: 620px;
-    }
-    #logo { display: flex; align-items: center; gap: 10px; width: fit-content; cursor: context-menu; margin-bottom: 18px; }
-    #logo img { user-select: none; }
-    #logo .word { font-size: 18px; font-weight: 600; color: #e7e7ec; letter-spacing: 0.5px; }
-    #logo .word em { color: #3ddc84; font-style: normal; }
-    h1 {
-      margin: 0 0 14px;
-      font-size: clamp(34px, 5.2vw, 58px);
-      line-height: 1.04;
-    }
-    h1 em { color: #3ddc84; font-style: normal; }
-    #logomenu {
-      position: fixed;
-      background: #131316;
-      border: 1px solid #2a2a30;
-      border-radius: 8px;
-      padding: 5px;
-      z-index: 10;
-      min-width: 210px;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
-    }
-    #logomenu[hidden] { display: none; }
-    #logomenu button, #logomenu a {
-      display: block;
-      width: 100%;
-      text-align: left;
-      background: none;
-      border: 0;
-      border-radius: 4px;
-      padding: 7px 11px;
-      color: #c9c9d1;
-      font: inherit;
-      cursor: pointer;
-      text-decoration: none;
-      text-transform: none;
-      letter-spacing: normal;
-      box-shadow: none;
-    }
-    #logomenu button:hover, #logomenu a:hover { background: #1d1d22; color: #e7e7ec; }
-    #panel p { margin: 0 0 20px; }
-    #panel strong { color: #c9c9d1; font-weight: 600; }
-    #actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    button, .btn {
-      background: #17171b;
-      color: #e7e7ec;
-      border: 1px solid #2f2f36;
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-      border-radius: 8px;
-      padding: 12px 18px;
-      font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      line-height: 1;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-    }
-    button:hover, .btn:hover { border-color: #3ddc84; color: #3ddc84; }
-    .btn.primary, button.primary {
-      background: #3ddc84;
-      color: #0a0a0c;
-      border-color: #3ddc84;
-      box-shadow: none;
-    }
-    .btn.primary:hover, button.primary:hover { background: #5ce69a; color: #0a0a0c; }
-    #tapplay {
-      position: fixed;
-      left: 50%;
-      bottom: 12dvh;
-      transform: translateX(-50%);
-      background: #3ddc84;
-      color: #0a0a0c;
-      border-color: #3ddc84;
-      box-shadow: none;
-    }
-    #hint {
-      position: absolute;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #5c5c66;
-      animation: sink 2.4s ease-in-out infinite;
-    }
-    @keyframes sink { 50% { transform: translate(-50%, 6px); } }
-    @media (prefers-reduced-motion: reduce) { #hint { animation: none; } }
-    main {
-      position: relative;
-      background: #0a0a0c;
-      border-top: 1px solid #2a2a30;
-    }
-    section { max-width: 860px; margin: 0 auto; padding: 60px 24px; }
-    section + section { border-top: 1px solid #1c1c21; }
-    h2 {
-      margin: 0 0 20px;
-      font-size: 22px;
-      line-height: 1.15;
-    }
-    h2::before { content: '» '; color: #3ddc84; }
-    #pipe {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      list-style: none;
-      margin: 0 0 18px;
-      padding: 0;
-    }
-    #pipe li {
-      background: #131316;
-      border: 1px solid #26262c;
-      border-radius: 4px;
-      padding: 5px 11px;
-      color: #b9b9c2;
-    }
-    #pipe li + li::before {
-      content: '→';
-      color: #3ddc84;
-      margin-right: 8px;
-      margin-left: -3px;
-    }
-    .term {
-      background: #060607;
-      border: 1px solid #26262c;
-      border-radius: 6px;
-      padding: 16px 18px;
-      overflow-x: auto;
-      margin: 0 0 14px;
-      color: #b9b9c2;
-      line-height: 1.5;
-    }
-    .term .ps { color: #3ddc84; }
-    .term .out { color: #6fbf73; }
-    #termframe-box {
-      background: #060607;
-      border: 1px solid #26262c;
-      border-radius: 6px;
-      padding: 14px;
-      overflow-x: auto;
-      margin: 14px 0 10px;
-      min-height: 60px;
-    }
-    .termframe { margin: 0; font: 8px/1.06 ui-monospace, Menlo, Consolas, monospace; }
+    body { margin: 0; background: var(--l0); color: var(--text-2); font-family: var(--sans); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+    a { color: var(--accent-text); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { display: flex; align-items: center; gap: 14px; height: 60px; }
+    #logo { display: flex; align-items: center; gap: 9px; cursor: context-menu; }
+    #logo .word { font-size: 15px; font-weight: 600; color: var(--text-1); }
+    #logo .word em { color: var(--accent-text); font-style: normal; }
+    nav .links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; align-items: center; }
+    nav .links a { color: var(--text-2); }
+    nav .links a:hover { color: var(--text-1); text-decoration: none; }
+    nav .demo-link { color: var(--accent-text) !important; }
+
+    .btn { font-family: var(--sans); font-size: 14px; font-weight: 500; height: 42px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; border-radius: var(--r-btn); border: 1px solid var(--border-default); color: var(--text-1); background: var(--l2); cursor: pointer; white-space: nowrap; }
+    .btn:hover { border-color: var(--border-strong); text-decoration: none; }
+    .btn.primary { background: var(--accent); color: #04130B; border-color: var(--accent); font-weight: 600; }
+    .btn.primary:hover { background: var(--accent-text); }
+    .btn.lg { height: 48px; font-size: 15px; padding: 0 24px; }
+
+    .hero { text-align: center; padding: 56px 0 34px; }
+    h1 { margin: 0 auto; font-family: var(--sans); font-weight: 600; font-size: clamp(44px, 6vw, 76px); line-height: 1.0; letter-spacing: -0.03em; color: var(--text-1); max-width: 16ch; }
+    h1 em { color: var(--accent-text); font-style: normal; }
+    .hero .sub { margin: 22px auto 30px; font-size: 18px; line-height: 1.55; color: var(--text-2); max-width: 60ch; }
+    .hero .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    .showpiece { border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; background: var(--l1); position: relative; }
+    .showpiece canvas { width: 100%; height: clamp(320px, 46vw, 560px); display: block; }
+    .showpiece .cap { position: absolute; left: 16px; bottom: 14px; font: 13px/1 var(--mono); color: var(--text-1); background: color-mix(in oklch, var(--l0), transparent 18%); padding: 7px 11px; border-radius: 7px; border: 1px solid var(--border-default); }
+    .showpiece .cap b { color: var(--accent-text); font-weight: 500; }
+
+    .aibeat { margin: 64px 0; border: 1px solid var(--border-default); border-radius: 14px; background: linear-gradient(180deg, var(--l2), var(--l1)); padding: 44px; display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 44px; align-items: center; }
+    .aibeat .pct { font-family: var(--sans); font-weight: 600; font-size: clamp(72px, 9vw, 128px); line-height: 0.9; letter-spacing: -0.04em; color: var(--accent-text); }
+    .aibeat h2 { margin: 8px 0 0; font-family: var(--sans); font-weight: 600; font-size: 24px; letter-spacing: -0.02em; color: var(--text-1); }
+    .aibeat .note { margin: 12px 0 0; color: var(--text-2); font-size: 15px; max-width: 36ch; }
+    .verdict { background: var(--l0); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px 22px; min-height: 188px; }
+    .verdict .who { font: 12px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .verdict .said { margin: 10px 0 0; font-size: 19px; line-height: 1.4; color: var(--text-1); min-height: 80px; }
+    .verdict .said .cur { color: var(--accent-text); }
+    .verdict .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+    section { padding: 56px 0; border-top: 1px solid var(--border-subtle); }
+    h2.sec { margin: 0 0 8px; font-family: var(--sans); font-weight: 600; font-size: 32px; letter-spacing: -0.02em; color: var(--text-1); }
+    .lede { margin: 0 0 28px; color: var(--text-2); max-width: 60ch; font-size: 15px; }
+    .grid { display: grid; gap: 14px; }
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card { border: 1px solid var(--border-subtle); border-radius: var(--r-card); background: var(--l1); padding: 22px; }
+    .card .k { font: 12px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .card .big { font-family: var(--sans); font-weight: 600; font-size: 40px; letter-spacing: -0.02em; color: var(--text-1); margin-top: 10px; font-variant-numeric: tabular-nums; }
+    .card .big em { color: var(--accent-text); font-style: normal; }
+    .card p { margin: 8px 0 0; color: var(--text-2); font-size: 14px; }
+    .pipe { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; padding: 0; list-style: none; }
+    .pipe li { font: 13px/1 var(--mono); color: var(--text-2); background: var(--l2); border: 1px solid var(--border-subtle); border-radius: var(--r-chip); padding: 8px 11px; }
+    .pipe li + li::before { content: '→'; color: var(--text-3); margin: 0 9px 0 -2px; }
+
+    .demo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .demo .card { padding: 0; overflow: hidden; }
+    .demo .hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
+    .demo .hd .k { font: 12px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .demo .hd a { font-size: 13px; }
+    .demo .body { padding: 16px; min-height: 150px; display: flex; align-items: center; justify-content: center; }
+    #tv-canvas { width: 100%; height: 180px; display: block; border-radius: var(--r-chip); background: var(--l0); }
+    .byteflow { margin: 0; font: 11px/1.7 var(--mono); color: var(--accent-text); height: 180px; overflow: hidden; word-break: break-all; width: 100%; mask-image: linear-gradient(180deg, transparent, #000 16%, #000 84%, transparent); }
+    .termframe { margin: 0; font: 6px/1.05 var(--mono); white-space: pre; }
     .termframe i { font-style: normal; }
-    .cap { color: #5c5c66; font-size: 12px; }
-    .cap code { color: #8a8a93; }
-    table { border-collapse: collapse; width: 100%; margin: 14px 0 4px; }
-    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #1c1c21; vertical-align: top; }
-    th { color: #c9c9d1; font-weight: 600; }
-    td:last-child { color: #b9b9c2; }
-    footer {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 28px 24px 40px;
-      color: #5c5c66;
-      display: flex;
-      gap: 14px;
-    }
-    footer a { color: #8a8a93; text-decoration: none; }
-    footer a:hover { color: #3ddc84; }
+    .modes .gly { font: 8px/0.95 var(--mono); white-space: pre; }
+    .modes .gly i { font-style: normal; }
+    .modes-now { font: 13px/1.4 var(--mono); color: var(--accent-text); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .contact { text-align: center; }
+    .contact h2 { font-family: var(--sans); font-weight: 600; font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.025em; color: var(--text-1); margin: 0 0 12px; }
+    .contact p { margin: 0 auto 26px; color: var(--text-2); max-width: 54ch; font-size: 16px; }
+    .contact .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    .footer { padding: 28px 0 56px; border-top: 1px solid var(--border-subtle); display: flex; gap: 18px; color: var(--text-3); font-size: 14px; }
+    .footer a { color: var(--text-2); }
+
+    #logomenu { position: fixed; background: var(--l3); border: 1px solid var(--border-default); border-radius: var(--r-modal); padding: 5px; z-index: 30; min-width: 210px; }
+    #logomenu[hidden] { display: none; }
+    #logomenu button, #logomenu a { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: var(--r-chip); padding: 8px 11px; color: var(--text-1); font: 14px/1.4 var(--sans); cursor: pointer; }
+    #logomenu button:hover, #logomenu a:hover { background: var(--l4); text-decoration: none; }
+    #tapplay { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; }
     video { display: none; }
-    @media (max-width: 760px) {
-      #panel { padding: 22px; }
-      section { padding: 40px 18px; }
+
+    @media (max-width: 860px) {
+      .aibeat { grid-template-columns: 1fr; gap: 28px; padding: 28px; }
+      .cols-3, .demo { grid-template-columns: 1fr; }
     }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
   </style>
 </head>
 <body>
-  <div id="bg"><canvas id="hero-canvas"></canvas></div>
-
-  <section id="hero">
-    <div id="panel">
-      <div id="logo" title="right-click for brand assets">
-        <img id="logomark" src="/brand/glyphcast-mark.svg" alt="" width="26" height="26" draggable="false" />
+  <div class="wrap">
+    <nav>
+      <span id="logo" title="right-click for brand assets">
+        <img id="logomark" src="/brand/glyphcast-mark.svg" alt="" width="22" height="22" draggable="false" />
         <span class="word">glyph<em>cast</em></span>
+      </span>
+      <span class="links">
+        <a href="#ai">The AI test</a>
+        <a href="/moat">The moat</a>
+        <a href="/view?ch=bbb">glyphTV</a>
+        <a href="/lab">The lab</a>
+        <a href="https://github.com/Orellius/glyphcast">GitHub</a>
+        <a class="demo-link" href="mailto:demo@glyphcast.tv?subject=glyphcast%20demo">Get a demo</a>
+      </span>
+    </nav>
+
+    <header class="hero">
+      <h1>This video is <em>text</em>.<br>An AI can read it.</h1>
+      <p class="sub">glyphcast re-encodes every frame into a grid of Unicode glyphs — streamed as
+        bytes, drawn anywhere text can be. The picture below is moving, and it's literally
+        characters. Select it. Copy it. Feed it to a language model.</p>
+      <div class="actions">
+        <button id="copyframe" class="btn primary lg">Copy this frame as text</button>
+        <a class="btn lg" href="#ai">See an AI read it ↓</a>
       </div>
-      <h1 class="display">Video<br />as <em>text</em>.</h1>
-      <p>This background is not a video. It is <strong><span id="cells">…</span> cells</strong> —
-        each one a printable Unicode glyph plus two colors — re-encoded from the
-        source every frame, entirely on your GPU.</p>
-      <div id="actions">
-        <a class="btn primary" href="/view?ch=bbb">⏺ glyphTV — tune in live</a>
-        <button id="copyframe">copy this frame as text</button>
-        <a class="btn" href="/lab">open the lab</a>
+    </header>
+
+    <div class="showpiece">
+      <canvas id="hero-canvas" width="1180" height="560"></canvas>
+      <span class="cap">live · <b>every pixel is a printable glyph</b> · re-encoded on your GPU</span>
+    </div>
+
+    <div class="aibeat" id="ai">
+      <div>
+        <div class="pct" id="ai-pct">83%</div>
+        <h2>A blind LLM reads the text-video.</h2>
+        <p class="note">We fed glyph frames — no image, just the characters — to Claude, GPT, and a
+          24B local model, as adversarial multiple choice. They identify the scene at 83%, vs 25% chance.</p>
+      </div>
+      <div class="verdict">
+        <div class="who" id="verdict-who">claude · blind · color frame</div>
+        <p class="said" id="verdict-said"></p>
+        <div class="actions">
+          <button id="copyllm" class="btn primary">Copy a frame → test it in your ChatGPT</button>
+          <a class="btn" href="mailto:demo@glyphcast.tv?subject=glyphcast%20—%20full%20LLM%20demo">Get a live demo →</a>
+        </div>
       </div>
     </div>
-    <button id="tapplay" hidden>autoplay blocked — tap to start</button>
-    <div id="hint">▼</div>
-  </section>
-
-  <div id="logomenu" hidden>
-    <button id="lm-copysvg">copy logo as SVG</button>
-    <button id="lm-copytext">copy logo as text</button>
-    <a href="/brand/glyphcast-mark.svg" download>download mark</a>
-    <a href="/brand">brand guidelines</a>
   </div>
 
-  <main>
-    <section>
-      <h2 class="display">how it works</h2>
-      <ol id="pipe">
+  <section id="how">
+    <div class="wrap">
+      <h2 class="sec">How it works</h2>
+      <p class="lede">One frame, seven stages — the data at each step is real, computed live in your browser.</p>
+      <ol class="pipe">
         <li>source</li><li>sample</li><li>encode cells</li><li>delta-pack</li><li>websocket</li><li>unpack</li><li>one GL draw</li>
       </ol>
-      <p>Every frame is a grid of monospace cells. A cell is one glyph — octant
-        (2×4 subpixels, U+1CD00), sextant (2×3), quadrant (2×2), halfblock, or an
-        ascii ramp — plus a foreground and background color. Frames go over the
-        wire as skip/emit runs against the previous grid: byte-aligned, no entropy
-        coding, dumb enough for a terminal or an MCU to decode.
-        <strong>The wire never carries pixels.</strong></p>
-    </section>
-
-    <section>
-      <h2 class="display">a terminal is a full receiver</h2>
-      <pre class="term"><span class="ps">$</span> GC_CH=bbb bun clients/term.ts wss://relay.glyphcast.tv   <span style="color:#4c4c55"># the live station, right now</span>
-<span class="ps">$</span> GC_CH=verify GC_FRAMES=120 bun clients/term.ts
-<span class="out">{"frames":120,"checksum":2291410159,"cols":240,"rows":81}</span></pre>
-      <p>The same stream the browser draws, rendered with ANSI truecolor escapes —
-        real U+1CD00 octant glyphs in your terminal. The checksum matches the
-        caster's: the wire is lossless by design. That output is a real end-to-end
-        run, not a mock.</p>
-      <div id="termframe-box"></div>
-      <p class="cap">↑ an actual frame as received by <code>clients/term.ts</code> over
-        cast → relay → terminal (100×34 cells, quadrant mode, checksum 121124078).
-        Select it — it is text.</p>
-    </section>
-
-    <section>
-      <h2 class="display">measured, not estimated</h2>
-      <p>M4 Max, Chrome-family browser, Big Buck Bunny 1080p60. Every row is
-        reproducible in the lab.</p>
-      <table>
-        <tr><th>Claim</th><th>Measured</th></tr>
-        <tr><td>Text renders at video fps</td><td>138,880 cells @ 60+ fps, 0ms CPU, 1 draw call</td></tr>
-        <tr><td>4K-class panel from typography</td><td>1,248,000 cells = 3840×2600 subpixel lattice @ 67 fps</td></tr>
-        <tr><td>Wire format is lossless</td><td>pack→unpack states identical (checksum), every config</td></tr>
-        <tr><td>Ultra-low bandwidth tier</td><td>160 cols quadrant @ 24fps: color ≈ 1.8 Mbps · mono ≈ 266 kbps</td></tr>
-        <tr><td>A terminal is a full receiver</td><td>checksum identical to caster; 4,337 octant glyphs in one frame</td></tr>
-        <tr><td>Million-cell broadcast</td><td>1,248,000 cells streamed @ 32 fps (8-worker caster)</td></tr>
-      </table>
-    </section>
-
-    <section>
-      <h2 class="display">play with it</h2>
-      <div id="actions">
-        <a class="btn primary" href="/view?ch=bbb">glyphTV — the live station</a>
-        <a class="btn" href="/lab">the lab — engines, modes, benches</a>
-        <a class="btn" href="/player">the player — drop a video on it</a>
-        <a class="btn" href="https://github.com/Orellius/glyphcast">github</a>
+      <div class="grid cols-3">
+        <div class="card"><span class="k">renders at video fps</span><div class="big" data-count="138880">0</div><p>glyph cells per frame, 60 fps, 0&nbsp;ms CPU, one GL draw call.</p></div>
+        <div class="card"><span class="k">the wire is lossless</span><div class="big">pack <em>=</em> unpack</div><p>Byte-aligned skip/emit runs. Checksums identical, every config.</p></div>
+        <div class="card"><span class="k">a terminal is a receiver</span><div class="big">4,337 <em>glyphs</em></div><p>U+1CD00 octants in one terminal frame — same stream, no browser.</p></div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <footer>
+  <section>
+    <div class="wrap">
+      <h2 class="sec">See it run</h2>
+      <p class="lede">The live station, the wire bytes flowing past, the glyph modes, and a real terminal capture.</p>
+      <div class="demo">
+        <div class="card"><div class="hd"><span class="k">glyphTV — live station</span><a href="/view?ch=bbb">Tune in →</a></div><div class="body"><canvas id="tv-canvas" width="520" height="360"></canvas></div></div>
+        <div class="card"><div class="hd"><span class="k">the wire — bytes, never pixels</span></div><div class="body"><pre class="byteflow" id="byteflow"></pre></div></div>
+        <div class="card"><div class="hd"><span class="k">five glyph modes</span><span class="modes-now" id="modes-now">octant</span></div><div class="body modes"><div class="gly" id="modes-gly"></div></div></div>
+        <div class="card"><div class="hd"><span class="k">received in a terminal</span></div><div class="body"><div class="termframe" id="termframe">connecting…</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact">
+    <div class="wrap">
+      <h2>Want your video — or your agents — to speak glyph?</h2>
+      <p>Streaming over constrained links, feeding video to a text-only model, rendering on a
+        terminal or an MCU — if any of that is your problem, I'd love to show you a full demo.</p>
+      <div class="actions">
+        <a class="btn primary lg" href="mailto:demo@glyphcast.tv?subject=glyphcast%20—%20full%20LLM%20demo">Get a live demo →</a>
+        <a class="btn lg" href="/lab">Or open the lab yourself</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="footer">
       <span>glyphcast.tv</span>
-      <a href="/brand">brand</a>
-      <a href="https://github.com/Orellius">Orellius</a>
-    </footer>
-  </main>
+      <a href="/brand">Brand</a>
+      <a href="https://github.com/Orellius/glyphcast">GitHub</a>
+      <a href="mailto:demo@glyphcast.tv">Contact</a>
+    </div>
+  </div>
 
+  <div id="logomenu" hidden>
+    <button id="lm-copysvg">Copy logo as SVG</button>
+    <button id="lm-copytext">Copy logo as text</button>
+    <a href="/brand/glyphcast-mark.svg" download>Download mark</a>
+    <a href="/brand">Brand guidelines</a>
+  </div>
+
+  <button id="tapplay" class="btn primary" hidden>Autoplay blocked — tap to start</button>
   <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay crossorigin="anonymous"></video>
   <script type="module" src="/src/landing.ts"></script>
 </body>

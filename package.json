@@ -16,6 +16,7 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "lottie-web": "^5.13.0",
     "mp4box": "^2.3.0"
   }
 }
