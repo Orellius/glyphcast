@@ -13,7 +13,7 @@ import { createRendererGL } from './renderer_gl'
 import { createWireState, stateChecksum, stateToCells, unpack, type WireDepth, type WireMode, type WireState } from './wire'
 
 const q = new URLSearchParams(location.search)
-const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
+const wsUrl = q.get('ws') ?? (['localhost', '127.0.0.1'].includes(location.hostname) ? 'ws://localhost:8788' : 'wss://relay.glyphcast.tv')
 const ch = q.get('ch') ?? 'main'
 // all display FX opt-in: scan/gap read as black grid lines, glow lifts
 // blacks (washed-out look). Default = the pure picture.

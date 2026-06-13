@@ -1,0 +1,422 @@
+[
+  {
+    "t": 2,
+    "variant": "ascii-40",
+    "file": "t2-ascii-40.txt",
+    "chars": 573,
+    "bytes": 573
+  },
+  {
+    "t": 2,
+    "variant": "ascii-80",
+    "file": "t2-ascii-80.txt",
+    "chars": 2186,
+    "bytes": 2186
+  },
+  {
+    "t": 2,
+    "variant": "ascii-120",
+    "file": "t2-ascii-120.txt",
+    "chars": 4960,
+    "bytes": 4960
+  },
+  {
+    "t": 2,
+    "variant": "quadrant-40",
+    "file": "t2-quadrant-40.txt",
+    "chars": 573,
+    "bytes": 1689
+  },
+  {
+    "t": 2,
+    "variant": "quadrant-80",
+    "file": "t2-quadrant-80.txt",
+    "chars": 2186,
+    "bytes": 6350
+  },
+  {
+    "t": 2,
+    "variant": "quadrant-120",
+    "file": "t2-quadrant-120.txt",
+    "chars": 4960,
+    "bytes": 14174
+  },
+  {
+    "t": 2,
+    "variant": "halfblock-40",
+    "file": "t2-halfblock-40.txt",
+    "chars": 573,
+    "bytes": 1693
+  },
+  {
+    "t": 2,
+    "variant": "halfblock-80",
+    "file": "t2-halfblock-80.txt",
+    "chars": 2186,
+    "bytes": 6506
+  },
+  {
+    "t": 2,
+    "variant": "halfblock-120",
+    "file": "t2-halfblock-120.txt",
+    "chars": 4960,
+    "bytes": 14800
+  },
+  {
+    "t": 2,
+    "variant": "ansi-80",
+    "file": "t2-ansi-80.txt",
+    "chars": 72773,
+    "bytes": 76937
+  },
+  {
+    "t": 7,
+    "variant": "ascii-40",
+    "file": "t7-ascii-40.txt",
+    "chars": 573,
+    "bytes": 573
+  },
+  {
+    "t": 7,
+    "variant": "ascii-80",
+    "file": "t7-ascii-80.txt",
+    "chars": 2186,
+    "bytes": 2186
+  },
+  {
+    "t": 7,
+    "variant": "ascii-120",
+    "file": "t7-ascii-120.txt",
+    "chars": 4960,
+    "bytes": 4960
+  },
+  {
+    "t": 7,
+    "variant": "quadrant-40",
+    "file": "t7-quadrant-40.txt",
+    "chars": 573,
+    "bytes": 1681
+  },
+  {
+    "t": 7,
+    "variant": "quadrant-80",
+    "file": "t7-quadrant-80.txt",
+    "chars": 2186,
+    "bytes": 6416
+  },
+  {
+    "t": 7,
+    "variant": "quadrant-120",
+    "file": "t7-quadrant-120.txt",
+    "chars": 4960,
+    "bytes": 14364
+  },
+  {
+    "t": 7,
+    "variant": "halfblock-40",
+    "file": "t7-halfblock-40.txt",
+    "chars": 573,
+    "bytes": 1693
+  },
+  {
+    "t": 7,
+    "variant": "halfblock-80",
+    "file": "t7-halfblock-80.txt",
+    "chars": 2186,
+    "bytes": 6506
+  },
+  {
+    "t": 7,
+    "variant": "halfblock-120",
+    "file": "t7-halfblock-120.txt",
+    "chars": 4960,
+    "bytes": 14800
+  },
+  {
+    "t": 7,
+    "variant": "ansi-80",
+    "file": "t7-ansi-80.txt",
+    "chars": 73707,
+    "bytes": 77937
+  },
+  {
+    "t": 12,
+    "variant": "ascii-40",
+    "file": "t12-ascii-40.txt",
+    "chars": 573,
+    "bytes": 573
+  },
+  {
+    "t": 12,
+    "variant": "ascii-80",
+    "file": "t12-ascii-80.txt",
+    "chars": 2186,
+    "bytes": 2186
+  },
+  {
+    "t": 12,
+    "variant": "ascii-120",
+    "file": "t12-ascii-120.txt",
+    "chars": 4960,
+    "bytes": 4960
+  },
+  {
+    "t": 12,
+    "variant": "quadrant-40",
+    "file": "t12-quadrant-40.txt",
+    "chars": 573,
+    "bytes": 1661
+  },
+  {
+    "t": 12,
+    "variant": "quadrant-80",
+    "file": "t12-quadrant-80.txt",
+    "chars": 2186,
+    "bytes": 6304
+  },
+  {
+    "t": 12,
+    "variant": "quadrant-120",
+    "file": "t12-quadrant-120.txt",
+    "chars": 4960,
+    "bytes": 14060
+  },
+  {
+    "t": 12,
+    "variant": "halfblock-40",
+    "file": "t12-halfblock-40.txt",
+    "chars": 573,
+    "bytes": 1693
+  },
+  {
+    "t": 12,
+    "variant": "halfblock-80",
+    "file": "t12-halfblock-80.txt",
+    "chars": 2186,
+    "bytes": 6506
+  },
+  {
+    "t": 12,
+    "variant": "halfblock-120",
+    "file": "t12-halfblock-120.txt",
+    "chars": 4960,
+    "bytes": 14800
+  },
+  {
+    "t": 12,
+    "variant": "ansi-80",
+    "file": "t12-ansi-80.txt",
+    "chars": 72871,
+    "bytes": 76989
+  },
+  {
+    "t": 17,
+    "variant": "ascii-40",
+    "file": "t17-ascii-40.txt",
+    "chars": 573,
+    "bytes": 573
+  },
+  {
+    "t": 17,
+    "variant": "ascii-80",
+    "file": "t17-ascii-80.txt",
+    "chars": 2186,
+    "bytes": 2186
+  },
+  {
+    "t": 17,
+    "variant": "ascii-120",
+    "file": "t17-ascii-120.txt",
+    "chars": 4960,
+    "bytes": 4960
+  },
+  {
+    "t": 17,
+    "variant": "quadrant-40",
+    "file": "t17-quadrant-40.txt",
+    "chars": 573,
+    "bytes": 1677
+  },
+  {
+    "t": 17,
+    "variant": "quadrant-80",
+    "file": "t17-quadrant-80.txt",
+    "chars": 2186,
+    "bytes": 6344
+  },
+  {
+    "t": 17,
+    "variant": "quadrant-120",
+    "file": "t17-quadrant-120.txt",
+    "chars": 4960,
+    "bytes": 14068
+  },
+  {
+    "t": 17,
+    "variant": "halfblock-40",
+    "file": "t17-halfblock-40.txt",
+    "chars": 573,
+    "bytes": 1693
+  },
+  {
+    "t": 17,
+    "variant": "halfblock-80",
+    "file": "t17-halfblock-80.txt",
+    "chars": 2186,
+    "bytes": 6506
+  },
+  {
+    "t": 17,
+    "variant": "halfblock-120",
+    "file": "t17-halfblock-120.txt",
+    "chars": 4960,
+    "bytes": 14800
+  },
+  {
+    "t": 17,
+    "variant": "ansi-80",
+    "file": "t17-ansi-80.txt",
+    "chars": 72890,
+    "bytes": 77048
+  },
+  {
+    "t": 22,
+    "variant": "ascii-40",
+    "file": "t22-ascii-40.txt",
+    "chars": 573,
+    "bytes": 573
+  },
+  {
+    "t": 22,
+    "variant": "ascii-80",
+    "file": "t22-ascii-80.txt",
+    "chars": 2186,
+    "bytes": 2186
+  },
+  {
+    "t": 22,
+    "variant": "ascii-120",
+    "file": "t22-ascii-120.txt",
+    "chars": 4960,
+    "bytes": 4960
+  },
+  {
+    "t": 22,
+    "variant": "quadrant-40",
+    "file": "t22-quadrant-40.txt",
+    "chars": 573,
+    "bytes": 1681
+  },
+  {
+    "t": 22,
+    "variant": "quadrant-80",
+    "file": "t22-quadrant-80.txt",
+    "chars": 2186,
+    "bytes": 6388
+  },
+  {
+    "t": 22,
+    "variant": "quadrant-120",
+    "file": "t22-quadrant-120.txt",
+    "chars": 4960,
+    "bytes": 14416
+  },
+  {
+    "t": 22,
+    "variant": "halfblock-40",
+    "file": "t22-halfblock-40.txt",
+    "chars": 573,
+    "bytes": 1693
+  },
+  {
+    "t": 22,
+    "variant": "halfblock-80",
+    "file": "t22-halfblock-80.txt",
+    "chars": 2186,
+    "bytes": 6506
+  },
+  {
+    "t": 22,
+    "variant": "halfblock-120",
+    "file": "t22-halfblock-120.txt",
+    "chars": 4960,
+    "bytes": 14800
+  },
+  {
+    "t": 22,
+    "variant": "ansi-80",
+    "file": "t22-ansi-80.txt",
+    "chars": 74584,
+    "bytes": 78786
+  },
+  {
+    "t": 27,
+    "variant": "ascii-40",
+    "file": "t27-ascii-40.txt",
+    "chars": 573,
+    "bytes": 573
+  },
+  {
+    "t": 27,
+    "variant": "ascii-80",
+    "file": "t27-ascii-80.txt",
+    "chars": 2186,
+    "bytes": 2186
+  },
+  {
+    "t": 27,
+    "variant": "ascii-120",
+    "file": "t27-ascii-120.txt",
+    "chars": 4960,
+    "bytes": 4960
+  },
+  {
+    "t": 27,
+    "variant": "quadrant-40",
+    "file": "t27-quadrant-40.txt",
+    "chars": 573,
+    "bytes": 1689
+  },
+  {
+    "t": 27,
+    "variant": "quadrant-80",
+    "file": "t27-quadrant-80.txt",
+    "chars": 2186,
+    "bytes": 6430
+  },
+  {
+    "t": 27,
+    "variant": "quadrant-120",
+    "file": "t27-quadrant-120.txt",
+    "chars": 4960,
+    "bytes": 14386
+  },
+  {
+    "t": 27,
+    "variant": "halfblock-40",
+    "file": "t27-halfblock-40.txt",
+    "chars": 573,
+    "bytes": 1693
+  },
+  {
+    "t": 27,
+    "variant": "halfblock-80",
+    "file": "t27-halfblock-80.txt",
+    "chars": 2186,
+    "bytes": 6506
+  },
+  {
+    "t": 27,
+    "variant": "halfblock-120",
+    "file": "t27-halfblock-120.txt",
+    "chars": 4960,
+    "bytes": 14800
+  },
+  {
+    "t": 27,
+    "variant": "ansi-80",
+    "file": "t27-ansi-80.txt",
+    "chars": 72717,
+    "bytes": 76961
+  }
+]

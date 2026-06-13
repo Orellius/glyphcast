@@ -39,6 +39,11 @@ const server = Bun.serve<{ role: Role; ch: string }, never>({
     }
     const role: Role = url.searchParams.get('role') === 'cast' ? 'cast' : 'view'
     const ch = url.searchParams.get('ch') || 'main'
+    // public deployment: GC_CAST_KEY gates who may broadcast (viewers stay
+    // open). Without it - local dev - anyone can cast, unchanged behavior.
+    if (role === 'cast' && process.env.GC_CAST_KEY && url.searchParams.get('key') !== process.env.GC_CAST_KEY) {
+      return new Response('caster key required', { status: 403 })
+    }
     if (srv.upgrade(req, { data: { role, ch } })) return undefined
     return new Response('glyphcast relay: ws?role=cast|view&ch=<channel>, GET /stats', { status: 200 })
   },

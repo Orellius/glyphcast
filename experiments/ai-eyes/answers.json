@@ -1,0 +1,102 @@
+{
+  "source": "public/bbb60.mp4 (Big Buck Bunny, CC-BY, 30s clip)",
+  "note": "Ground truth written from visual inspection of the extracted PNGs before any text-variant was read. Options order is fixed here; bench.ts shuffles per call.",
+  "frames": [
+    {
+      "t": 2,
+      "truth": "A large grey rabbit stands in a grassy meadow under a pale sky, hands held together in front of its chest.",
+      "options": [
+        "A large grey rabbit standing in a grassy meadow",
+        "A red sports car driving on a highway at sunset",
+        "A sailboat on the open ocean under clouds",
+        "A city street at night with neon signs"
+      ],
+      "hardOptions": [
+        "A large grey rabbit standing in a grassy meadow",
+        "A brown squirrel leaping across the grass",
+        "A grey rabbit lying asleep in a burrow",
+        "Two rodents fighting under a tree"
+      ]
+    },
+    {
+      "t": 7,
+      "truth": "A brown flying squirrel leaps through the air over a green meadow; a big tree trunk is on the left and a small chinchilla peeks from the bottom-left corner.",
+      "options": [
+        "A squirrel leaping through the air over a meadow",
+        "A mountain landscape covered in snow",
+        "A close-up of a person typing on a laptop",
+        "A flock of birds over the sea"
+      ],
+      "hardOptions": [
+        "A squirrel leaping through the air over a meadow",
+        "A large grey rabbit standing in the grass",
+        "A butterfly resting on a flower",
+        "A rabbit walking past a tree trunk"
+      ]
+    },
+    {
+      "t": 12,
+      "truth": "Close-up of two squirrels under a tree: a slender red squirrel holding a purple butterfly, next to a bigger angry-looking brown squirrel.",
+      "options": [
+        "Two squirrels close up, one holding a butterfly",
+        "A waterfall in a tropical forest",
+        "A chess board mid-game",
+        "A campfire at night"
+      ],
+      "hardOptions": [
+        "Two squirrels close up, one holding a butterfly",
+        "A grey rabbit eating an apple in the grass",
+        "A single squirrel running up a tree trunk",
+        "A rabbit and a bird facing each other"
+      ]
+    },
+    {
+      "t": 17,
+      "truth": "The large grey rabbit stands in the meadow looking down at fruit (apples) scattered on the grass in front of it.",
+      "options": [
+        "A grey rabbit in a meadow with fruit on the ground",
+        "An airplane on a runway",
+        "A bowl of soup on a table",
+        "A snowy mountain peak"
+      ],
+      "hardOptions": [
+        "A grey rabbit in a meadow with fruit on the ground",
+        "A grey rabbit asleep under a tree",
+        "A squirrel burying nuts in the grass",
+        "Two rabbits hopping together"
+      ]
+    },
+    {
+      "t": 22,
+      "truth": "The large grey rabbit seen from the side, standing next to a thick tree trunk, green meadow behind.",
+      "options": [
+        "A grey rabbit standing beside a large tree trunk",
+        "A lighthouse on a rocky coast",
+        "A child riding a bicycle",
+        "A desert with sand dunes"
+      ],
+      "hardOptions": [
+        "A grey rabbit standing beside a large tree trunk",
+        "A grey rabbit standing alone in open grass",
+        "A squirrel sitting on a branch",
+        "A rabbit digging a hole in the ground"
+      ]
+    },
+    {
+      "t": 27,
+      "truth": "The grey rabbit seen from behind near the tree trunk, with spiky chestnuts visible near its head.",
+      "options": [
+        "A grey rabbit from behind near a tree trunk",
+        "A ship in a stormy sea",
+        "A keyboard and a monitor on a desk",
+        "Fireworks over a city skyline"
+      ],
+      "hardOptions": [
+        "A grey rabbit from behind near a tree trunk",
+        "A grey rabbit facing the viewer in a meadow",
+        "Two squirrels under a tree",
+        "A bird landing on a branch"
+      ]
+    }
+  ]
+}

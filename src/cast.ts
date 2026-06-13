@@ -18,7 +18,7 @@ const cols = Number(q.get('cols') ?? 240)
 const wireMode: WireMode = q.get('wire') === 'mono' ? 'mono' : 'color'
 const depth: WireDepth = q.get('depth') === '565' ? '565' : '888'
 const p3 = q.get('p3') === '1'
-const wsUrl = q.get('ws') ?? 'ws://localhost:8788'
+const wsUrl = q.get('ws') ?? (['localhost', '127.0.0.1'].includes(location.hostname) ? 'ws://localhost:8788' : 'wss://relay.glyphcast.tv')
 const mq = q.get('mode')
 const mode: Mode = mq === 'sextant' ? 'sextant' : mq === 'octant' ? 'octant' : 'quadrant'
 // ?wc=1: WebCodecs source - fetch + VideoDecoder, no <video> element in the
