@@ -8,7 +8,9 @@
     "preview": "vite preview",
     "relay": "bun server/relay.ts",
     "verify": "bash verify",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "og": "bun scripts/gen-og.ts && rsvg-convert -w 1200 -h 630 public/og.svg -o public/og.png",
+    "icons": "rsvg-convert -w 32 -h 32 public/favicon.svg -o public/favicon-32.png && rsvg-convert -w 16 -h 16 public/favicon.svg -o public/favicon-16.png && rsvg-convert -w 132 -h 132 public/favicon.svg -o /tmp/mark132.png && magick -size 180x180 xc:'#0a0a0c' /tmp/mark132.png -gravity center -composite public/apple-touch-icon.png && magick public/favicon-16.png public/favicon-32.png public/favicon.ico"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",

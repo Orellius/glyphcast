@@ -13,6 +13,7 @@
 // light build: SVG renderer only, no expression engine (drops the eval + ~half the bytes)
 import lottie from 'lottie-web/build/player/lottie_light'
 import { encodeCells, frameToPlainText, sampleX, sampleY } from './encode'
+import { frameToColorText } from './llm-frame'
 import { createRendererGL } from './renderer_gl'
 import { createSampler } from './sampler'
 import { createWireState, pack } from './wire'
@@ -121,12 +122,21 @@ setInterval(pumpAscii, 220)
 const copyllm = $<HTMLButtonElement>('copyllm')
 copyllm.addEventListener('click', () => {
   if (video.readyState < 2) return
-  const img = sampler.sample(video, 80 * sampleX('ascii'), 40 * sampleY('ascii'))
-  const frame = frameToPlainText(img, 80, 40)
+  // send the COLOUR frame (a palette legend + a letter grid of colour regions),
+  // the same colour representation the 83% blind benchmark was measured on, so
+  // the model reconstructs the scene from colours, not just brightness
+  const C = 54
+  const R = 26
+  const img = sampler.sample(video, C * 3, R * 3)
+  const frame = frameToColorText(img, C, R, 12)
   const prompt =
-    'The block below is one video frame encoded as text, an ASCII luminance ramp where denser ' +
-    'characters are darker. Reconstruct the image in your head and tell me, in one sentence, what ' +
-    'scene it shows.\n\n```\n' + frame + '\n```'
+    'Below is one frame of a video, encoded as plain text - no pixels at all. First a colour ' +
+    'palette (each letter maps to a hex colour and its name), then a grid where every letter is ' +
+    "that colour's region in the frame. Reconstruct the scene in your head from the colours and " +
+    'their layout, then answer:\n' +
+    '1) In one sentence, what colours, shapes and setting do you see?\n' +
+    '2) Which scene is it? (A) an outdoor woodland or grassy meadow  (B) a city street at night  ' +
+    '(C) a plate of food on a table  (D) a sailboat on open water\n\n' + frame
   void navigator.clipboard.writeText(prompt).then(() => {
     const orig = copyllm.textContent
     copyllm.textContent = 'copied, paste into ChatGPT, Claude, anything'
@@ -194,3 +204,16 @@ const kick = setInterval(() => {
   if (++tries > 6) return clearInterval(kick)
   void video.play().catch(() => {})
 }, 400)
+
+// ---------- mobile nav menu ----------
+const navWrap = document.querySelector('.nav-wrap')
+const navToggle = document.getElementById('navToggle')
+if (navWrap && navToggle) {
+  const setOpen = (open: boolean) => {
+    navWrap.classList.toggle('open', open)
+    navToggle.setAttribute('aria-expanded', String(open))
+  }
+  navToggle.addEventListener('click', () => setOpen(!navWrap.classList.contains('open')))
+  for (const a of navWrap.querySelectorAll('.nav-links a')) a.addEventListener('click', () => setOpen(false))
+  addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) })
+}

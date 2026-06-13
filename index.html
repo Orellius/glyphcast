@@ -2,200 +2,388 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>glyphcast — video as text</title>
-  <meta name="description" content="A typography-only video codec: every frame is a grid of Unicode glyphs. The wire never carries pixels — and an AI can read it." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>glyphcast · video as text</title>
+  <meta name="description" content="glyphcast is a typography-only video codec: every frame is a grid of printable Unicode characters, not pixels. That one fork is the moat - an AI reads it, a terminal plays it, the wire is lossless text, and it draws on anything that prints." />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://glyphcast.tv/" />
+  <meta property="og:site_name" content="glyphcast" />
+  <meta property="og:title" content="glyphcast · video as text" />
+  <meta property="og:description" content="A typography-only video codec. Everyone ships pixels; glyphcast ships characters, and an AI can read it." />
+  <meta property="og:image" content="https://glyphcast.tv/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="glyphcast · video as text" />
+  <meta name="twitter:description" content="A typography-only video codec. Everyone ships pixels; glyphcast ships characters, and an AI can read it." />
+  <meta name="twitter:image" content="https://glyphcast.tv/og.png" />
   <style>
     :root {
       color-scheme: dark;
       --l0: #08090A; --l1: #0F1011; --l2: #161719; --l3: #1F2024; --l4: #262830;
       --text-1: #E9ECF1; --text-2: #9BA1A6; --text-3: #6E7479;
-      --accent: #3DD68C; --accent-text: #6EE6A6;
+      --accent: #3DD68C; --accent-text: #6EE6A6; --green: #3ddc84;
       --border-subtle: #1F2024; --border-default: #262830; --border-strong: #3A3D44;
-      --r-btn: 6px; --r-card: 10px; --r-modal: 14px; --r-chip: 6px;
+      --r-card: 12px;
       --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
       --sans: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
     }
     * { box-sizing: border-box; }
-    body { margin: 0; background: var(--l0); color: var(--text-2); font-family: var(--sans); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+    html { -webkit-text-size-adjust: 100%; scroll-padding-top: 84px; }
+    body { margin: 0; background: var(--l0); color: var(--text-2); font-family: var(--sans); font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 18px; }
     a { color: var(--accent-text); text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .mono { font-family: var(--mono); }
+    img, canvas, svg { max-width: 100%; }
 
-    nav { display: flex; align-items: center; gap: 14px; height: 60px; }
-    #logo { display: flex; align-items: center; gap: 9px; cursor: context-menu; }
+    /* ---------- navbar (sticky glass bar; mobile-first hamburger) ---------- */
+    .nav-wrap { position: sticky; top: 0; z-index: 50; padding-top: env(safe-area-inset-top);
+      background: color-mix(in oklch, var(--l0), transparent 16%);
+      -webkit-backdrop-filter: saturate(1.5) blur(12px); backdrop-filter: saturate(1.5) blur(12px);
+      border-bottom: 1px solid var(--border-subtle); }
+    .nav { max-width: 1180px; margin: 0 auto; padding: 0 18px; display: flex; align-items: center; gap: 12px; height: 58px; }
+    #logo { display: flex; align-items: center; gap: 8px; flex: none; }
+    #logo img { display: block; }
     #logo .word { font-size: 15px; font-weight: 600; color: var(--text-1); }
     #logo .word em { color: var(--accent-text); font-style: normal; }
-    nav .links { margin-left: auto; display: flex; gap: 22px; font-size: 14px; align-items: center; }
-    nav .links a { color: var(--text-2); }
-    nav .links a:hover { color: var(--text-1); text-decoration: none; }
-    nav .demo-link { color: var(--accent-text) !important; }
 
-    .btn { font-family: var(--sans); font-size: 14px; font-weight: 500; height: 42px; padding: 0 20px; display: inline-flex; align-items: center; gap: 8px; border-radius: var(--r-btn); border: 1px solid var(--border-default); color: var(--text-1); background: var(--l2); cursor: pointer; white-space: nowrap; }
+    .nav-toggle { margin-left: auto; display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 42px; height: 42px; padding: 11px; border: 1px solid var(--border-default); border-radius: 9px; background: var(--l1); cursor: pointer; }
+    .nav-toggle span { display: block; height: 2px; width: 100%; background: var(--text-1); border-radius: 2px; transition: transform 0.2s, opacity 0.2s; }
+    .nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .nav-links { position: absolute; left: 0; right: 0; top: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin: 0;
+      padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); background: var(--l1); border-bottom: 1px solid var(--border-default);
+      opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity 0.2s, transform 0.2s; }
+    .nav-wrap.open .nav-links { opacity: 1; transform: none; pointer-events: auto; }
+    .nav-links a { color: var(--text-2); display: flex; align-items: center; gap: 9px; padding: 12px 13px; font-size: 15px; border-radius: 8px; white-space: nowrap; }
+    .nav-links a:hover { color: var(--text-1); background: var(--l2); text-decoration: none; }
+    .nav-links a.gh svg { width: 16px; height: 16px; flex: none; }
+    .nav-links a.cta { background: var(--accent); color: #04130B; font-weight: 600; justify-content: center; margin-top: 4px; }
+    .nav-links a.cta:hover { background: var(--accent-text); color: #04130B; }
+
+    @media (min-width: 720px) {
+      .nav-toggle { display: none; }
+      .nav-links { position: static; flex-direction: row; align-items: center; gap: 4px; margin-left: auto;
+        padding: 0; background: none; border: 0; opacity: 1; transform: none; pointer-events: auto; }
+      .nav-links a { font-size: 13.5px; padding: 8px 11px; border-radius: 7px; }
+      .nav-links a.cta { padding: 9px 15px; margin: 0 0 0 4px; }
+    }
+
+    /* ---------- buttons ---------- */
+    .btn { font-family: var(--sans); font-size: 14px; font-weight: 500; height: 44px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 7px; border: 1px solid var(--border-default); color: var(--text-1); background: var(--l2); cursor: pointer; white-space: nowrap; }
     .btn:hover { border-color: var(--border-strong); text-decoration: none; }
     .btn.primary { background: var(--accent); color: #04130B; border-color: var(--accent); font-weight: 600; }
     .btn.primary:hover { background: var(--accent-text); }
-    .btn.lg { height: 48px; font-size: 15px; padding: 0 24px; }
+    .btn.block { width: 100%; }
 
-    .hero { text-align: center; padding: 56px 0 34px; }
-    h1 { margin: 0 auto; font-family: var(--sans); font-weight: 600; font-size: clamp(44px, 6vw, 76px); line-height: 1.0; letter-spacing: -0.03em; color: var(--text-1); max-width: 16ch; }
-    h1 em { color: var(--accent-text); font-style: normal; }
-    .hero .sub { margin: 22px auto 30px; font-size: 18px; line-height: 1.55; color: var(--text-2); max-width: 60ch; }
-    .hero .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .kicker { display: inline-block; font: 11px/1 var(--mono); color: var(--accent-text); text-transform: uppercase; letter-spacing: 0.14em; }
 
-    .showpiece { border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; background: var(--l1); position: relative; }
-    .showpiece canvas { width: 100%; height: clamp(320px, 46vw, 560px); display: block; }
-    .showpiece .cap { position: absolute; left: 16px; bottom: 14px; font: 13px/1 var(--mono); color: var(--text-1); background: color-mix(in oklch, var(--l0), transparent 18%); padding: 7px 11px; border-radius: 7px; border: 1px solid var(--border-default); }
+    /* ---------- hero (mobile-first: stacked) ---------- */
+    .hero { display: grid; grid-template-columns: 1fr; gap: 28px; padding: 26px 0 8px; }
+    .hero h1 { margin: 12px 0 0; font-weight: 600; font-size: clamp(36px, 11vw, 64px); line-height: 1.03; letter-spacing: -0.03em; color: var(--text-1); }
+    .hero h1 em { color: var(--accent-text); font-style: normal; }
+    .hero h1 s { color: var(--text-3); text-decoration-thickness: 2px; text-decoration-color: var(--border-strong); }
+    .hero .sub { margin: 18px 0 0; font-size: clamp(15px, 4vw, 17px); line-height: 1.6; color: var(--text-2); }
+    .hero .one { margin: 18px 0 0; padding: 13px 15px; border: 1px solid var(--border-default); border-left: 2px solid var(--accent); border-radius: 8px; background: var(--l1); font: 12.5px/1.6 var(--mono); color: var(--text-1); }
+    .hero .one b { color: var(--accent-text); font-weight: 500; }
+    .hero .actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+    .hero .actions .btn { flex: 1 1 auto; }
+
+    .showpiece { position: relative; border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; background: radial-gradient(120% 100% at 50% 0%, #0d1410, var(--l0)); aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; }
+    #ignite { width: 100%; height: 100%; }
+    .showpiece .cap { position: absolute; left: 12px; bottom: 11px; font: 11px/1 var(--mono); color: var(--text-2); background: color-mix(in oklch, var(--l0), transparent 14%); padding: 6px 9px; border-radius: 6px; border: 1px solid var(--border-default); }
     .showpiece .cap b { color: var(--accent-text); font-weight: 500; }
 
-    .aibeat { margin: 64px 0; border: 1px solid var(--border-default); border-radius: 14px; background: linear-gradient(180deg, var(--l2), var(--l1)); padding: 44px; display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 44px; align-items: center; }
-    .aibeat .pct { font-family: var(--sans); font-weight: 600; font-size: clamp(72px, 9vw, 128px); line-height: 0.9; letter-spacing: -0.04em; color: var(--accent-text); }
-    .aibeat h2 { margin: 8px 0 0; font-family: var(--sans); font-weight: 600; font-size: 24px; letter-spacing: -0.02em; color: var(--text-1); }
-    .aibeat .note { margin: 12px 0 0; color: var(--text-2); font-size: 15px; max-width: 36ch; }
-    .verdict { background: var(--l0); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 20px 22px; min-height: 188px; }
-    .verdict .who { font: 12px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-    .verdict .said { margin: 10px 0 0; font-size: 19px; line-height: 1.4; color: var(--text-1); min-height: 80px; }
-    .verdict .said .cur { color: var(--accent-text); }
-    .verdict .actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    section { padding: 44px 0; border-top: 1px solid var(--border-subtle); }
+    h2.sec { margin: 8px 0 0; font-weight: 600; font-size: clamp(24px, 6vw, 31px); letter-spacing: -0.02em; color: var(--text-1); line-height: 1.1; }
+    .lede { margin: 10px 0 26px; color: var(--text-2); max-width: 62ch; font-size: 14.5px; }
 
-    section { padding: 56px 0; border-top: 1px solid var(--border-subtle); }
-    h2.sec { margin: 0 0 8px; font-family: var(--sans); font-weight: 600; font-size: 32px; letter-spacing: -0.02em; color: var(--text-1); }
-    .lede { margin: 0 0 28px; color: var(--text-2); max-width: 60ch; font-size: 15px; }
-    .grid { display: grid; gap: 14px; }
-    .cols-3 { grid-template-columns: repeat(3, 1fr); }
-    .card { border: 1px solid var(--border-subtle); border-radius: var(--r-card); background: var(--l1); padding: 22px; }
-    .card .k { font: 12px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-    .card .big { font-family: var(--sans); font-weight: 600; font-size: 40px; letter-spacing: -0.02em; color: var(--text-1); margin-top: 10px; font-variant-numeric: tabular-nums; }
+    /* ---------- the fork ---------- */
+    .fork { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .path { border: 1px solid var(--border-subtle); border-radius: var(--r-card); background: var(--l1); padding: 20px; }
+    .path.glyph { border-color: #1c3a2b; background: linear-gradient(180deg, #0c1410, var(--l1)); }
+    .path .tag { font: 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); }
+    .path.glyph .tag { color: var(--accent-text); }
+    .path h3 { margin: 11px 0 0; font-size: 18px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
+    .path p { margin: 8px 0 0; font-size: 13.5px; color: var(--text-2); }
+    .path ul { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+    .path li { font: 12.5px/1.45 var(--mono); color: var(--text-2); display: flex; gap: 9px; align-items: baseline; }
+    .path li .m { color: var(--text-3); flex: none; }
+    .path.glyph li .m { color: var(--accent); }
+    .path li.dead .m { color: #8a5a5a; }
+
+    /* ---------- the bento of four doors ---------- */
+    .doors { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .door { border: 1px solid var(--border-subtle); border-radius: var(--r-card); background: var(--l1); overflow: hidden; display: flex; flex-direction: column; }
+    .door .anim { height: 132px; border-bottom: 1px solid var(--border-subtle); background: radial-gradient(120% 130% at 50% 0%, #0c1410, var(--l0)); position: relative; }
+    .door .anim > div { width: 100%; height: 100%; }
+    .door .anim .no { position: absolute; top: 10px; left: 13px; font: 11px/1 var(--mono); color: var(--text-3); z-index: 2; }
+    .door .pad { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .door .stat { font-weight: 600; font-size: clamp(26px, 7vw, 32px); letter-spacing: -0.02em; color: var(--accent-text); font-variant-numeric: tabular-nums; line-height: 1; }
+    .door h3 { margin: 0; font-size: 17px; font-weight: 600; color: var(--text-1); }
+    .door p { margin: 0; font-size: 13.5px; color: var(--text-2); }
+    .door p b { color: var(--text-1); font-weight: 500; }
+    .door .verdict { border: 1px solid var(--border-subtle); border-left: 2px solid var(--accent); background: var(--l0); border-radius: 0 8px 8px 0; padding: 9px 12px; font: 12px/1.5 var(--mono); }
+    .door .verdict .vwho { display: block; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-size: 10px; margin-bottom: 4px; }
+    .door .verdict .vsaid { color: var(--text-1); }
+    .door .verdict .cur { color: var(--accent-text); }
+    .door .live { margin-top: auto; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--l0); overflow: hidden; }
+    .door .live.pad-live { padding: 10px; display: flex; align-items: center; justify-content: center; min-height: 96px; }
+    .asciframe { margin: 0; font: 7px/1.06 var(--mono); white-space: pre; color: var(--green); }
+    #termframe { margin: 0; font: 5px/1.05 var(--mono); white-space: pre; }
+    #termframe i { font-style: normal; }
+    .byteflow { margin: 0; font: 11px/1.7 var(--mono); color: var(--accent-text); width: 100%; height: 108px; overflow: hidden; word-break: break-all; padding: 8px 10px; mask-image: linear-gradient(180deg, transparent, #000 18%, #000 82%, transparent); }
+    #moat-tv { width: 100%; aspect-ratio: 16 / 9; height: auto; display: block; background: var(--l0); }
+
+    /* ---------- live proof strip ---------- */
+    .proof { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .panel { border: 1px solid var(--border-subtle); border-radius: var(--r-card); background: var(--l1); overflow: hidden; }
+    .panel .hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 15px; border-bottom: 1px solid var(--border-subtle); }
+    .panel .hd .k { font: 11px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .panel .hd .dot { display: inline-flex; align-items: center; gap: 7px; font: 10px/1 var(--mono); color: var(--accent-text); white-space: nowrap; }
+    .panel .hd .dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent), transparent 40%); } 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+    #proof-canvas { width: 100%; aspect-ratio: 16 / 9; height: auto; display: block; background: var(--l0); }
+    .panel .body { padding: 14px; }
+
+    /* ---------- engineering ---------- */
+    .grid3 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .card { border: 1px solid var(--border-subtle); border-radius: var(--r-card); background: var(--l1); padding: 20px; }
+    .card .k { font: 11px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .card .big { font-weight: 600; font-size: 26px; letter-spacing: -0.02em; color: var(--text-1); margin-top: 9px; }
     .card .big em { color: var(--accent-text); font-style: normal; }
-    .card p { margin: 8px 0 0; color: var(--text-2); font-size: 14px; }
-    .pipe { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; padding: 0; list-style: none; }
-    .pipe li { font: 13px/1 var(--mono); color: var(--text-2); background: var(--l2); border: 1px solid var(--border-subtle); border-radius: var(--r-chip); padding: 8px 11px; }
-    .pipe li + li::before { content: '→'; color: var(--text-3); margin: 0 9px 0 -2px; }
+    .card p { margin: 9px 0 0; color: var(--text-2); font-size: 13px; }
 
-    .demo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .demo .card { padding: 0; overflow: hidden; }
-    .demo .hd { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border-subtle); }
-    .demo .hd .k { font: 12px/1.4 var(--mono); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
-    .demo .hd a { font-size: 13px; }
-    .demo .body { padding: 16px; min-height: 150px; display: flex; align-items: center; justify-content: center; }
-    #tv-canvas { width: 100%; height: 180px; display: block; border-radius: var(--r-chip); background: var(--l0); }
-    .byteflow { margin: 0; font: 11px/1.7 var(--mono); color: var(--accent-text); height: 180px; overflow: hidden; word-break: break-all; width: 100%; mask-image: linear-gradient(180deg, transparent, #000 16%, #000 84%, transparent); }
-    .termframe { margin: 0; font: 6px/1.05 var(--mono); white-space: pre; }
-    .termframe i { font-style: normal; }
-    .modes .gly { font: 8px/0.95 var(--mono); white-space: pre; }
-    .modes .gly i { font-style: normal; }
-    .modes-now { font: 13px/1.4 var(--mono); color: var(--accent-text); text-transform: uppercase; letter-spacing: 0.08em; }
+    /* ---------- cta ---------- */
+    .cta { text-align: center; }
+    .cta h2 { font-weight: 600; font-size: clamp(24px, 6vw, 38px); letter-spacing: -0.025em; color: var(--text-1); margin: 0 0 12px; line-height: 1.1; }
+    .cta p { margin: 0 auto 24px; color: var(--text-2); max-width: 56ch; font-size: 15px; }
+    .cta .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
-    .contact { text-align: center; }
-    .contact h2 { font-family: var(--sans); font-weight: 600; font-size: clamp(28px, 4vw, 44px); letter-spacing: -0.025em; color: var(--text-1); margin: 0 0 12px; }
-    .contact p { margin: 0 auto 26px; color: var(--text-2); max-width: 54ch; font-size: 16px; }
-    .contact .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-
-    .footer { padding: 28px 0 56px; border-top: 1px solid var(--border-subtle); display: flex; gap: 18px; color: var(--text-3); font-size: 14px; }
+    .footer { padding: 24px 0 48px; border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: 16px; color: var(--text-3); font-size: 13px; }
     .footer a { color: var(--text-2); }
 
-    #logomenu { position: fixed; background: var(--l3); border: 1px solid var(--border-default); border-radius: var(--r-modal); padding: 5px; z-index: 30; min-width: 210px; }
-    #logomenu[hidden] { display: none; }
-    #logomenu button, #logomenu a { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: var(--r-chip); padding: 8px 11px; color: var(--text-1); font: 14px/1.4 var(--sans); cursor: pointer; }
-    #logomenu button:hover, #logomenu a:hover { background: var(--l4); text-decoration: none; }
-    #tapplay { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; }
     video { display: none; }
 
-    @media (max-width: 860px) {
-      .aibeat { grid-template-columns: 1fr; gap: 28px; padding: 28px; }
-      .cols-3, .demo { grid-template-columns: 1fr; }
+    /* ---------- responsive scale-up ---------- */
+    @media (min-width: 560px) {
+      .hero .actions .btn { flex: 0 0 auto; }
     }
-    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    @media (min-width: 720px) {
+      .wrap { padding: 0 24px; }
+      .fork { grid-template-columns: 1fr 1fr; }
+      .grid3 { grid-template-columns: repeat(3, 1fr); }
+      .doors { grid-template-columns: 1fr 1fr; }
+    }
+    @media (min-width: 940px) {
+      body { font-size: 14px; }
+      section { padding: 56px 0; }
+      .hero { grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; padding: 40px 0 26px; }
+      .lede { margin: 10px 0 30px; }
+      .doors { grid-template-columns: 1.5fr 1fr; grid-template-areas: "d1 d2" "d1 d3" "d4 d4"; }
+      .d1 { grid-area: d1; } .d2 { grid-area: d2; } .d3 { grid-area: d3; } .d4 { grid-area: d4; }
+      .d1 .anim { height: 168px; }
+      .d1 .live { flex: 1 1 auto; margin-top: 10px; }
+      .d4 { display: grid; grid-template-columns: 1fr 1.15fr; }
+      .d4 .anim { border-bottom: 0; border-right: 1px solid var(--border-subtle); height: auto; }
+      .proof { grid-template-columns: 1.35fr 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { .panel .hd .dot::before { animation: none; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <nav>
-      <span id="logo" title="right-click for brand assets">
-        <img id="logomark" src="/brand/glyphcast-mark.svg" alt="" width="22" height="22" draggable="false" />
+  <header class="nav-wrap">
+    <nav class="nav">
+      <a id="logo" href="/">
+        <img src="/brand/glyphcast-mark.svg" alt="" width="22" height="22" draggable="false" />
         <span class="word">glyph<em>cast</em></span>
-      </span>
-      <span class="links">
-        <a href="#ai">The AI test</a>
-        <a href="/moat">The moat</a>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-controls="navLinks" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links" id="navLinks">
+        <a href="#doors">The moat</a>
         <a href="/view?ch=bbb">glyphTV</a>
         <a href="/lab">The lab</a>
-        <a href="https://github.com/Orellius/glyphcast">GitHub</a>
-        <a class="demo-link" href="mailto:demo@glyphcast.tv?subject=glyphcast%20demo">Get a demo</a>
-      </span>
+        <a class="gh" href="https://github.com/Orellius/glyphcast">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+          GitHub
+        </a>
+        <a class="cta" href="mailto:demo@glyphcast.tv?subject=glyphcast%20demo">Get a demo</a>
+      </div>
     </nav>
+  </header>
 
+  <div class="wrap">
     <header class="hero">
-      <h1>This video is <em>text</em>.<br>An AI can read it.</h1>
-      <p class="sub">glyphcast re-encodes every frame into a grid of Unicode glyphs — streamed as
-        bytes, drawn anywhere text can be. The picture below is moving, and it's literally
-        characters. Select it. Copy it. Feed it to a language model.</p>
-      <div class="actions">
-        <button id="copyframe" class="btn primary lg">Copy this frame as text</button>
-        <a class="btn lg" href="#ai">See an AI read it ↓</a>
+      <div>
+        <span class="kicker">a typography-only video codec</span>
+        <h1>Everyone ships <s>pixels</s>.<br>We ship <em>characters</em>.</h1>
+        <p class="sub">Every video codec on earth races to reconstruct the same thing: a grid of
+          pixels for a human eye. glyphcast reconstructs a grid of <em>printable characters</em>.
+          One fork in the road, and four doors open that no pixel codec can walk back through.</p>
+        <div class="one">the moat in one line:&nbsp; <b>video that is already text</b> is legible to a
+          language model, a terminal, and a microcontroller, <b>not just a screen</b>.</div>
+        <div class="actions">
+          <a class="btn primary" href="#doors">The four doors ↓</a>
+          <a class="btn" href="/lab">Open the lab</a>
+        </div>
+      </div>
+      <div class="showpiece">
+        <div id="ignite"></div>
+        <span class="cap">the codec lighting up · <b>every cell is a glyph</b></span>
       </div>
     </header>
+  </div>
 
-    <div class="showpiece">
-      <canvas id="hero-canvas" width="1180" height="560"></canvas>
-      <span class="cap">live · <b>every pixel is a printable glyph</b> · re-encoded on your GPU</span>
-    </div>
-
-    <div class="aibeat" id="ai">
-      <div>
-        <div class="pct" id="ai-pct">83%</div>
-        <h2>A blind LLM reads the text-video.</h2>
-        <p class="note">We fed glyph frames — no image, just the characters — to Claude, GPT, and a
-          24B local model, as adversarial multiple choice. They identify the scene at 83%, vs 25% chance.</p>
-      </div>
-      <div class="verdict">
-        <div class="who" id="verdict-who">claude · blind · color frame</div>
-        <p class="said" id="verdict-said"></p>
-        <div class="actions">
-          <button id="copyllm" class="btn primary">Copy a frame → test it in your ChatGPT</button>
-          <a class="btn" href="mailto:demo@glyphcast.tv?subject=glyphcast%20—%20full%20LLM%20demo">Get a live demo →</a>
+  <section id="fork">
+    <div class="wrap">
+      <span class="kicker">the fork</span>
+      <h2 class="sec">Same source frame. Two reconstruction alphabets.</h2>
+      <p class="lede">A codec is defined by what it rebuilds the picture out of. Pick pixels and you
+        inherit pixels' constraints forever. Pick characters and the output is, by construction,
+        readable by anything that can place a character.</p>
+      <div class="fork">
+        <div class="path">
+          <span class="tag">alphabet: pixels · h.264 / av1 / vp9</span>
+          <h3>Reconstructs a raster</h3>
+          <p>Decodes to a 2D array of RGB samples. Brilliant fidelity-per-bit. But the output only
+            means something to one kind of consumer:</p>
+          <ul>
+            <li class="dead"><span class="m">→</span> needs a screen and a GPU or decoder block</li>
+            <li class="dead"><span class="m">→</span> opaque to a text model with no vision stack</li>
+            <li class="dead"><span class="m">→</span> a terminal or an MCU cannot draw it</li>
+            <li class="dead"><span class="m">→</span> bitstream is a DCT plus entropy plus reference-frame state</li>
+          </ul>
+        </div>
+        <div class="path glyph">
+          <span class="tag">alphabet: characters · glyphcast</span>
+          <h3>Reconstructs a glyph grid</h3>
+          <p>Decodes to a grid of Unicode cells (octant / sextant / quadrant blocks) with per-cell
+            color. Worse fidelity-per-bit, on purpose. In exchange:</p>
+          <ul>
+            <li><span class="m">✓</span> a blind language model names the scene</li>
+            <li><span class="m">✓</span> a terminal renders it with ANSI truecolor</li>
+            <li><span class="m">✓</span> a character-LCD or MCU can print it</li>
+            <li><span class="m">✓</span> the wire is byte-aligned skip/emit runs, no DCT</li>
+          </ul>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <section id="how">
+  <section id="doors">
     <div class="wrap">
-      <h2 class="sec">How it works</h2>
-      <p class="lede">One frame, seven stages — the data at each step is real, computed live in your browser.</p>
-      <ol class="pipe">
-        <li>source</li><li>sample</li><li>encode cells</li><li>delta-pack</li><li>websocket</li><li>unpack</li><li>one GL draw</li>
-      </ol>
-      <div class="grid cols-3">
-        <div class="card"><span class="k">renders at video fps</span><div class="big" data-count="138880">0</div><p>glyph cells per frame, 60 fps, 0&nbsp;ms CPU, one GL draw call.</p></div>
-        <div class="card"><span class="k">the wire is lossless</span><div class="big">pack <em>=</em> unpack</div><p>Byte-aligned skip/emit runs. Checksums identical, every config.</p></div>
-        <div class="card"><span class="k">a terminal is a receiver</span><div class="big">4,337 <em>glyphs</em></div><p>U+1CD00 octants in one terminal frame — same stream, no browser.</p></div>
+      <span class="kicker">four doors a pixel codec can't walk back through</span>
+      <h2 class="sec">The moat, measured.</h2>
+      <p class="lede">Each number below was measured live on an M4 Max against Big Buck Bunny 1080p60,
+        not estimated. The point is never the number alone; it's the property a pixel format
+        structurally cannot retrofit.</p>
+      <div class="doors">
+
+        <article class="door d1">
+          <div class="anim"><span class="no">door 01</span><div id="anim1"></div></div>
+          <div class="pad">
+            <div class="stat" id="s-ai">83%</div>
+            <h3>An AI reads it, blind</h3>
+            <p>Fed glyph frames with <b>no image</b>, just the characters, a text-only LLM identifies
+              the scene at <b>83%</b> versus 25% chance. Glyph video is <b>already the model's native
+              input</b>: text. Real blind verdicts, logged:</p>
+            <div class="verdict"><span class="vwho" id="vWho">running blind tests…</span><span class="vsaid" id="vSaid"></span></div>
+            <div class="live pad-live"><pre class="asciframe" id="asciframe">sampling…</pre></div>
+            <button class="btn block" id="copyllm">Copy a frame → test your own LLM</button>
+          </div>
+        </article>
+
+        <article class="door d2">
+          <div class="anim"><span class="no">door 02</span><div id="anim2"></div></div>
+          <div class="pad">
+            <div class="stat">4,337</div>
+            <h3>A terminal is a full receiver</h3>
+            <p><span class="mono">bun clients/term.ts</span> renders the same stream with ANSI
+              truecolor, <b>no browser, no GPU, no codec library</b>, at a checksum identical to the
+              GL canvas. <b>4,337</b> real octant glyphs in one captured frame.</p>
+            <div class="live pad-live"><div id="termframe">connecting…</div></div>
+          </div>
+        </article>
+
+        <article class="door d3">
+          <div class="anim"><span class="no">door 03</span><div id="anim3"></div></div>
+          <div class="pad">
+            <div class="stat">pack = unpack</div>
+            <h3>The wire is lossless text</h3>
+            <p>The frame is skip/emit runs against the previous frame, <b>byte-aligned, no entropy
+              coding</b>. Checksums are identical in every config. No DCT, no reference frames.
+              <b>Dumb enough for a microcontroller</b> to decode.</p>
+            <div class="live"><pre class="byteflow" id="byteflow"></pre></div>
+          </div>
+        </article>
+
+        <article class="door d4">
+          <div class="anim"><span class="no">door 04</span><div id="anim4"></div></div>
+          <div class="pad">
+            <div class="stat">∞ substrates</div>
+            <h3>Renders on anything that prints</h3>
+            <p>One stream feeds a browser (GPU, one draw call), a terminal (ANSI), or a character
+              LCD. The reconstruction alphabet is <b>printable characters</b>, so the set of valid
+              displays is <b>everything that can place a glyph</b>, not just framebuffers.</p>
+            <div class="live"><canvas id="moat-tv" width="640" height="360"></canvas></div>
+          </div>
+        </article>
+
       </div>
     </div>
   </section>
 
-  <section>
+  <section id="proof">
     <div class="wrap">
-      <h2 class="sec">See it run</h2>
-      <p class="lede">The live station, the wire bytes flowing past, the glyph modes, and a real terminal capture.</p>
-      <div class="demo">
-        <div class="card"><div class="hd"><span class="k">glyphTV — live station</span><a href="/view?ch=bbb">Tune in →</a></div><div class="body"><canvas id="tv-canvas" width="520" height="360"></canvas></div></div>
-        <div class="card"><div class="hd"><span class="k">the wire — bytes, never pixels</span></div><div class="body"><pre class="byteflow" id="byteflow"></pre></div></div>
-        <div class="card"><div class="hd"><span class="k">five glyph modes</span><span class="modes-now" id="modes-now">octant</span></div><div class="body modes"><div class="gly" id="modes-gly"></div></div></div>
-        <div class="card"><div class="hd"><span class="k">received in a terminal</span></div><div class="body"><div class="termframe" id="termframe">connecting…</div></div></div>
+      <span class="kicker">not a mockup</span>
+      <h2 class="sec">This page is running the codec.</h2>
+      <p class="lede">The panel on the left is a video being re-encoded into glyph cells on your GPU,
+        right now. The bytes on the right are the actual wire packets for those cells, never pixels.</p>
+      <div class="proof">
+        <div class="panel">
+          <div class="hd"><span class="k">live · gpu glyph render</span><span class="dot">encoding on your GPU</span></div>
+          <canvas id="proof-canvas" width="900" height="506"></canvas>
+        </div>
+        <div class="panel">
+          <div class="hd"><span class="k">the wire · bytes, never pixels</span></div>
+          <div class="body"><pre class="byteflow" id="byteflow2" style="height:260px"></pre></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="contact">
+  <section id="hard">
     <div class="wrap">
-      <h2>Want your video — or your agents — to speak glyph?</h2>
-      <p>Streaming over constrained links, feeding video to a text-only model, rendering on a
-        terminal or an MCU — if any of that is your problem, I'd love to show you a full demo.</p>
+      <span class="kicker">the part that was hard to build</span>
+      <h2 class="sec">The implementation is its own moat.</h2>
+      <p class="lede">"Video as text" is one sentence. Making it run at video fps, losslessly, on a
+        terminal and a GPU at once, is the work.</p>
+      <div class="grid3">
+        <div class="card"><span class="k">octant unicode</span><div class="big">2×4 <em>subpixels</em>/char</div><p>230 octant glyphs (U+1CD00 to 1CDE5) generated from UnicodeData.txt, double the vertical detail of quadrants, mask-indexed on a separate glyph page.</p></div>
+        <div class="card"><span class="k">gpu cell encode</span><div class="big">0&nbsp;ms <em>CPU</em> · 1 draw</div><p>The entire cell encode runs in a WebGL2 fragment shader straight from the video texture. Atomic frames, so tearing is impossible by construction.</p></div>
+        <div class="card"><span class="k">worker-pool broadcast</span><div class="big">1,248,000 <em>cells</em></div><p>An 8-worker band-parallel caster streams a 3840×2600 subpixel lattice at 32 fps (single thread: 17), with drop-frame and backpressure gates.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="wrap">
+      <h2>Want your video, or your agents, to speak glyph?</h2>
+      <p>Streaming over a constrained link, feeding video to a text-only model, drawing on a terminal
+        or an MCU: if any of that is your problem, I'd love to show you the full thing.</p>
       <div class="actions">
-        <a class="btn primary lg" href="mailto:demo@glyphcast.tv?subject=glyphcast%20—%20full%20LLM%20demo">Get a live demo →</a>
-        <a class="btn lg" href="/lab">Or open the lab yourself</a>
+        <a class="btn primary" href="mailto:demo@glyphcast.tv?subject=glyphcast%20demo">Get a live demo →</a>
+        <a class="btn" href="/view?ch=bbb">Tune in to glyphTV</a>
+        <a class="btn" href="/lab">Open the lab</a>
       </div>
     </div>
   </section>
@@ -204,19 +392,13 @@
     <div class="footer">
       <span>glyphcast.tv</span>
       <a href="/brand">Brand</a>
+      <a href="/view?ch=bbb">glyphTV</a>
+      <a href="/lab">The lab</a>
       <a href="https://github.com/Orellius/glyphcast">GitHub</a>
       <a href="mailto:demo@glyphcast.tv">Contact</a>
     </div>
   </div>
 
-  <div id="logomenu" hidden>
-    <button id="lm-copysvg">Copy logo as SVG</button>
-    <button id="lm-copytext">Copy logo as text</button>
-    <a href="/brand/glyphcast-mark.svg" download>Download mark</a>
-    <a href="/brand">Brand guidelines</a>
-  </div>
-
-  <button id="tapplay" class="btn primary" hidden>Autoplay blocked — tap to start</button>
   <video id="video" src="/bbb60.mp4" muted loop playsinline autoplay crossorigin="anonymous"></video>
   <script type="module" src="/src/landing.ts"></script>
 </body>

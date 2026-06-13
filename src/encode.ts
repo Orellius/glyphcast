@@ -512,7 +512,10 @@ const spanFgBg = (fg: number, bg: number, text: string) =>
 
 const spanFg = (fg: number, text: string) => `<span style="color:${hex(fg)}">${text}</span>`
 
-export function frameToPlainText(img: ImageData, cols: number, rows: number): string {
+// invert=true flips the ramp so denser characters read as DARKER (the
+// conventional ASCII-art direction an LLM expects), instead of the codec's
+// native denser=brighter mapping. Used by the "feed a frame to your LLM" demo.
+export function frameToPlainText(img: ImageData, cols: number, rows: number, invert = false): string {
   const d = img.data
   const W = img.width
   const sx = (W / cols) | 0
@@ -531,7 +534,8 @@ export function frameToPlainText(img: ImageData, cols: number, rows: number): st
           b += d[i + 2]
         }
       }
-      line += LUMA_CHAR[(((r / n) | 0) * 54 + ((g / n) | 0) * 183 + ((b / n) | 0) * 19) >> 8]
+      const luma = (((r / n) | 0) * 54 + ((g / n) | 0) * 183 + ((b / n) | 0) * 19) >> 8
+      line += LUMA_CHAR[invert ? 255 - luma : luma]
     }
     lines.push(line)
   }
