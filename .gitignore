@@ -4,3 +4,8 @@ dist/
 public/demo*.mp4
 public/sample.mp4
 .vercel
+
+# agent config
+CLAUDE.md
+AGENTS.md
+.claude/

@@ -1,0 +1,24 @@
+glyphcast
+Copyright (c) 2026 Orel Ohayon
+
+This product is licensed under the GNU Affero General Public License v3.0.
+See LICENSE for the full text.
+
+--------------------------------------------------------------------------------
+Bundled sample video
+--------------------------------------------------------------------------------
+
+public/bbb.mp4, public/bbb60.mp4 and public/bbba.mp4 are encodes of
+
+    Big Buck Bunny
+    (c) copyright 2008, Blender Foundation
+    www.bigbuckbunny.org
+
+The 60 fps "Sunflower" version is (c) Blender Foundation 2008,
+Janus Bager Kristensen 2013.
+
+Big Buck Bunny is distributed under the Creative Commons Attribution 3.0
+license: https://creativecommons.org/licenses/by/3.0/
+
+These files are included only as a reproducible measurement input for the proof
+lab in the README. They are not part of the codec and carry their own license.
